@@ -158,11 +158,23 @@ function SongDetail({ song, onBack, onEdit }) {
 
   const currentKey = transposeChord(song.key || "C", transpose);
 
+  const handleEditClick = () => {
+    const inputPass = prompt("Nhập mật khẩu bài hát để chỉnh sửa:");
+    
+    if (inputPass === null) return; // Người dùng bấm Hủy
+
+    if (inputPass === song.songPassword) {
+      onEdit(song); // Đúng pass thì cho vào trang sửa
+    } else {
+      alert("Sai mật khẩu rồi bạn ơi!");
+    }
+  };
+
   return (
     <div className="song-viewer">
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
         <button className="btn-back" onClick={onBack}>← Danh sách</button>
-        <button onClick={() => onEdit(song)}>⚙ Chỉnh sửa</button>
+        <button onClick={handleEditClick}>⚙ Chỉnh sửa</button>
       </div>
       
       <div className="song-header">
@@ -204,7 +216,9 @@ function SongEditor({ onSave, onCancel, initialData }) {
   const [author, setAuthor] = useState(initialData?.author || "");
   const [content, setContent] = useState(initialData?.content || "");
   // Thêm state lưu Tone gốc
-  const [key, setKey] = useState(initialData?.key || "C"); 
+  const [key, setKey] = useState(initialData?.key || "C");
+  // Thêm state lưu mật khẩu bài hát
+  const [songPassword, setSongPassword] = useState(initialData?.songPassword || ""); 
 
   const chords = ["C", "D", "E", "F", "G", "A", "B", "Cm", "Dm", "Em", "Fm", "Gm", "Am", "Bm"];
 
@@ -240,6 +254,17 @@ function SongEditor({ onSave, onCancel, initialData }) {
         />
       </div>
 
+      <div className="password-selection" style={{ margin: '15px 0' }}>
+        <label style={{ fontWeight: 'bold', marginRight: '10px' }}>Mật khẩu bảo vệ bài hát:</label>
+        <input 
+          type="password"
+          placeholder="Nhập mã để sửa bài sau này..."
+          value={songPassword}
+          onChange={(e) => setSongPassword(e.target.value)}
+          style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }}
+        />
+      </div>
+
       <div className="tone-selection">
         <label style={{fontWeight: 'bold', marginRight: '10px'}}>Tone gốc của bài:</label>
         <select 
@@ -267,11 +292,20 @@ function SongEditor({ onSave, onCancel, initialData }) {
         onChange={e => setContent(e.target.value)}
       />
 
-      <div className="editor-footer" style={{marginTop: '20px', display: 'flex', gap: '10px'}}>
-        <button className="btn-save" onClick={() => onSave({ title, author, content, key })}>
+      <div className="editor-footer">
+        <button 
+          className="btn-save" 
+          onClick={() => {
+            if(!songPassword) {
+               alert("Vui lòng đặt mật khẩu cho bài hát!");
+               return;
+            }
+            onSave({ title, author, content, key, songPassword });
+          }}
+        >
           {initialData ? "LƯU THAY ĐỔI" : "ĐĂNG BÀI HÁT"}
         </button>
-        <button onClick={onCancel}>Hủy bỏ</button>
+        <button onClick={onCancel}>Hủy</button>
       </div>
     </div>
   );
