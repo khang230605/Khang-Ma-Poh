@@ -1,3 +1,8 @@
+/* Import Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Shantell+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+
+
+
 /* Tổng thể trang web */
 :root {
   --primary-color: #d71920; /* Màu đỏ chủ đạo */
@@ -166,6 +171,7 @@ button:hover {
 .song-content {
   margin-top: 30px;
   white-space: pre-wrap;
+  line-height: 3; /* Tăng khoảng cách dòng để có chỗ cho Note/Hợp âm */
   /* Font-size và line-height sẽ được điều khiển bằng inline-style từ React state */
 }
 
@@ -240,6 +246,7 @@ button:hover {
   --container-bg: #ffffff;
   --control-bg: #f8f9fa;
   --chord-color: #d71920; /* Màu đỏ của bạn */
+  --song-note-text-color: #000000; /* Màu chữ ghi chú */
 }
 
 /* Chế độ Tối */
@@ -248,6 +255,7 @@ button:hover {
   --text-color: #f4f4f4;
   --container-bg: #2d2d2d;
   --control-bg: #3d3d3d;
+  --song-note-text-color: #cccccc;
 }
 
 body {
@@ -279,4 +287,62 @@ body {
 
 .btn-delete:hover {
   background-color: #cc0000 !important;
+}
+
+
+/* Style cho Note đè lên lời */
+.song-note {
+  position: relative;
+  display: inline-block;
+  width: 0; /* Quan trọng: để lời nhạc bên dưới không bị đẩy ra */
+  overflow: visible;
+  vertical-align: baseline;
+}
+
+.song-note-text {
+  position: absolute;
+  bottom: 0.6em; /* Đẩy lên trên lời nhạc */
+  left: 0;
+  white-space: nowrap; /* Không cho xuống dòng */
+  /* --- CHỈNH FONT TẠI ĐÂY --- */
+  font-family: 'Shantell Sans'; 
+  font-style: italic;
+  font-size: 1em;
+  font-weight: normal;
+  background-color: transparent; 
+  padding: 0 2px;
+  pointer-events: none; /* Không cản trở việc chọn text bên dưới */
+}
+
+/* Chữ in đậm vẫn nằm ngang hàng lời nhạc */
+.song-bold {
+  font-weight: 800;
+  font-size: 1.5em;
+}
+
+/* Video Embed Container */
+/* Khung bao ngoài để giới hạn kích thước tổng thể */
+.video-wrapper {
+  max-width: 700px; /* Bạn chỉnh chiều rộng mong muốn ở đây (VD: 500px, 800px...) */
+  margin: 20px auto; /* Căn giữa */
+  width: 100%;
+}
+
+/* Kỹ thuật giữ tỷ lệ khung hình 16:9 */
+.video-responsive {
+  position: relative;
+  padding-bottom: 56.25%; /* Tỷ lệ 16:9 */
+  height: 0;
+  overflow: hidden;
+  border-radius: 12px; /* Bo góc cho đẹp */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.542);
+}
+
+.video-responsive iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
 }

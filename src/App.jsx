@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import myLogo from './assets/logo.png';
+import myLogo from './assets/logonoback.png';
 // Import Firebase
 import { db } from './firebase';
 import { collection, addDoc, getDocs, query, orderBy } from "firebase/firestore";
@@ -16,11 +16,15 @@ const colorOptions = ['#d71920', '#0056b3', '#28a745', '#6f42c1', '#fd7e14'];
 function App() {
   const [songs, setSongs] = useState([]);
   const [selectedSong, setSelectedSong] = useState(null);
+
+  // State cho ô tìm kiếm
+  const [searchTerm, setSearchTerm] = useState(""); 
+
   const [isEditing, setIsEditing] = useState(false);
   const [editingData, setEditingData] = useState(null); // Lưu thông tin bài hát đang được chọn để sửa
   // Sáng tối
-const [theme, setTheme] = useState('light'); // 'light' hoặc 'dark'
-const [chordColor, setChordColor] = useState('#d71920');
+  const [theme, setTheme] = useState('light'); // 'light' hoặc 'dark'
+  const [chordColor, setChordColor] = useState('#d71920');
   
   // Cập nhật thuộc tính của thẻ <html> mỗi khi theme hoặc màu đổi
   useEffect(() => {
@@ -28,6 +32,12 @@ const [chordColor, setChordColor] = useState('#d71920');
     document.documentElement.style.setProperty('--chord-color', chordColor);
   }, [theme, chordColor]);
 
+  // Lọc danh sách bài hát dựa trên từ khóa tìm kiếm
+  const filteredSongs = songs.filter(song => 
+    song.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    song.author.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
   // 1. Hàm lấy danh sách bài hát từ Firebase
   const fetchSongs = async () => {
     const q = query(collection(db, "songs"), orderBy("createdAt", "desc"));
@@ -122,7 +132,36 @@ const [chordColor, setChordColor] = useState('#d71920');
           </button>
         )}
       </header>
+     {/* Nếu không ở chế độ sửa bài và không đang xem chi tiết bài hát */}
+    {!isEditing && !selectedSong && (
+      <div className="main-home">
+        {/* THANH TÌM KIẾM */}
+        <div className="search-bar" style={{ marginBottom: '20px' }}>
+          <input 
+            type="text" 
+            placeholder="Tìm theo tên bài hát hoặc tác giả..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #edededff' }}
+          />
+        </div>
 
+        {/* DANH SÁCH BÀI HÁT (CHỈ DÙNG 1 CÁI NÀY THÔI) */}
+        <div className="song-list">
+          {filteredSongs.length > 0 ? (
+            filteredSongs.map(song => (
+              <div key={song.id} className="song-item" onClick={() => setSelectedSong(song)}>
+                <h3>{song.title} - <span className="author-name">{song.author}</span></h3>
+                <p className="song-meta">Đăng bởi: {song.author} • Cập nhật: {song.updatedAt}</p>
+              </div>
+            ))
+          ) : (
+            <div className="no-result">Không tìm thấy bài hát nào phù hợp...</div>
+          )}
+        </div>
+      </div>
+    )}
+      
       <hr />
 
       {/* Logic hiển thị các trang */}
@@ -145,12 +184,7 @@ const [chordColor, setChordColor] = useState('#d71920');
       ) : (
         <div className="song-list">
           {songs.length === 0 && <p>Chưa có bài hát nào. Hãy tạo bài mới!</p>}
-          {songs.map(song => (
-            <div key={song.id} className="song-item" onClick={() => setSelectedSong(song)}>
-              <h3>{song.title} - <span className="author">{song.author}</span></h3>
-              <p className="meta">Đăng bởi: {song.author} • Cập nhật: {song.updatedAt}</p>
-            </div>
-          ))}
+          
         </div>
       )}
     </div>
@@ -160,7 +194,7 @@ const [chordColor, setChordColor] = useState('#d71920');
 }
 
 import { transposeChord } from './chordLogic'; // Đảm bảo file này nằm cùng thư mục src
-
+import { getYouTubeEmbedUrl } from './youtubeLink';
 function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor }) {
   const [transpose, setTranspose] = useState(0);
   // 1. Thêm state để quản lý cỡ chữ (mặc định là 1.2 rem)
@@ -169,16 +203,38 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
   // State để hiện/ẩn hợp âm
   const [showChords, setShowChords] = useState(true);
 
+  // State để lưu link nhúng YouTube
+  const embedUrl = getYouTubeEmbedUrl(song.refLink);
+
   const renderContent = (content) => {
-    const parts = content.split(/(\[[^\]]+\])/g);
+    // Regex này nhận diện đồng thời: [hợp âm], /ghi chú/ và `chữ in đậm`
+    const parts = content.split(/(\[[^\]]+\]|\/[^\/]+\/|`[^`]+`)/g);
+
     return parts.map((part, index) => {
+      // 1. Xử lý Hợp âm [ ]
       if (part.startsWith('[') && part.endsWith(']')) {
+        if (!showChords) return null;
         const chordName = part.slice(1, -1);
         const newChord = transposeChord(chordName, transpose);
-        // Nếu showChords là false, trả về null (ẩn hợp âm)
-        if (!showChords) return null;
         return <span key={index} className="chord">{newChord}</span>;
       }
+
+      // 2. Note Ghi chú (Trên đầu lời nhạc)
+      if (part.startsWith('/') && part.endsWith('/')) {
+        const noteText = part.slice(1, -1);
+        return (
+        <span key={index} className="song-note">
+          <span className="song-note-text">{noteText}</span>
+        </span>
+      );
+      }
+
+      // 3. In đậm (Nằm ngang hàng lời nhạc)
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return <strong key={index} className="song-bold">{part.slice(1, -1)}</strong>;
+      }
+
+      // 4. Lời bài hát bình thường
       return <span key={index}>{part}</span>;
     });
   };
@@ -225,10 +281,31 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
           </button>
       </div>
       
+      {embedUrl && (
+        <div className="video-wrapper">
+          <div className="video-responsive">
+            <iframe
+              src={embedUrl}
+              title="YouTube video player"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          </div>
+        </div>
+      )}
+      
       <div className="song-header">
         <h2 style={{fontSize: '2.5rem', marginBottom: '5px'}}>{song.title}</h2>
         <p style={{fontSize: '1.2rem', color: '#666', marginTop: '0'}}>Arranger: {song.author}</p>
-        
+        {song.refLink && (
+          <div style={{ marginTop: '10px' }}>
+            <a href={song.refLink} target="_blank" rel="noopener noreferrer" 
+               style={{ color: '#008d8aff', textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+               📺 Nghe hoặc xem ref (Link tham khảo)
+            </a>
+          </div>
+        )}
+
         <div className="controls-row" style={{display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '20px'}}>
           {/* Cụm chỉnh Tone */}
           <div className="tone-control">
@@ -307,16 +384,59 @@ function SongEditor({ onSave, onCancel, initialData }) {
 
   const chords = ["C", "D", "E", "F", "G", "A", "B", "Cm", "Dm", "Em", "Fm", "Gm", "Am", "Bm"];
 
-  const insertChord = (chord) => {
+  // Thêm state lưu link tham khảo
+  const [refLink, setRefLink] = useState(initialData?.refLink || "");
+
+  // Hàm chèn thông minh: Giữ Ctrl+Z và vị trí Scroll
+  const smartInsert = (prefix, suffix = "") => {
+    const textarea = document.getElementById("song-textarea");
+    if (!textarea) return;
+
+    textarea.focus();
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+
+    // Chuỗi văn bản mới sẽ chèn vào
+    const textToInsert = prefix + selectedText + suffix;
+
+    // Sử dụng execCommand để trình duyệt ghi nhận đây là một thao tác gõ phím
+    // Điều này giúp giữ lịch sử Undo (Ctrl + Z)
+    const isSuccess = document.execCommand('insertText', false, textToInsert);
+
+    // Nếu trình duyệt không hỗ trợ execCommand (hiếm gặp), dùng cách cũ làm dự phòng
+    if (!isSuccess) {
+      const newContent = textarea.value.substring(0, start) + textToInsert + textarea.value.substring(end);
+      setContent(newContent);
+    } else {
+      // Cập nhật lại state content ngay lập tức để đồng bộ
+      setContent(textarea.value);
+    }
+  };
+
+  // insert Note function
+  const insertNote = () => {
     const textarea = document.getElementById("song-textarea");
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = textarea.value;
-    const newText = text.substring(0, start) + `[${chord}]` + text.substring(end);
+
+    // Lấy phần văn bản được bôi đen
+    const selectedText = text.substring(start, end);
+    
+    if (selectedText.length === 0) {
+      alert("Hãy bôi đen chữ bạn muốn tạo ghi chú bên trên!");
+      return;
+    }
+
+    // Bao bọc phần bôi đen bằng dấu / /
+    const newText = text.substring(0, start) + `/${selectedText}/` + text.substring(end);
     setContent(newText);
+
+    // Trả lại con trỏ chuột về sau phần vừa chèn
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(start + chord.length + 2, start + chord.length + 2);
+      textarea.setSelectionRange(start + selectedText.length + 2, start + selectedText.length + 2);
     }, 10);
   };
 
@@ -336,6 +456,15 @@ function SongEditor({ onSave, onCancel, initialData }) {
           placeholder="Tên Arranger" 
           value={author} 
           onChange={e => setAuthor(e.target.value)} 
+        />
+      </div>
+
+      <div className="input-group" style={{ margin: '15px 0' }}>
+        <input 
+          placeholder="Link bài hát tham khảo (Youtube, Spotify...)" 
+          value={refLink} 
+          onChange={e => setRefLink(e.target.value)}
+          className="input-author" /* Dùng tạm class này để đồng bộ style */
         />
       </div>
 
@@ -363,16 +492,29 @@ function SongEditor({ onSave, onCancel, initialData }) {
 
       <div className="toolbar" style={{marginTop: '10px'}}>
         <p style={{fontSize: '0.9rem', color: '#666', marginBottom: '5px'}}>Click để chèn nhanh hợp âm:</p>
-        <div className="chord-buttons">
-          {chords.map(c => (
-            <button key={c} onClick={() => insertChord(c)}>{c}</button>
-          ))}
+        <div className="chord-buttons" style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+        {/* Nút hợp âm nhanh */}
+        {chords.map(c => (
+          <button key={c} onClick={() => smartInsert(`[${c}]`)}>{c}</button>
+        ))}
+
+        {/* Nút Add Note cho phần bôi đen */}
+        <button 
+          onClick={() => smartInsert('/', '/')} 
+          style={{ fontWeight: 'bold', color: '#000000ff' }}
+        >
+          +Note
+        </button>
+
+        {/* Nút In đậm */}
+        <button onClick={() => smartInsert('`', '`')}><b>In đậm</b></button>
+
         </div>
       </div>
 
       <textarea 
         id="song-textarea"
-        placeholder="Nhập lời và đặt hợp âm trong ngoặc vuông, ví dụ: [C]Ngày thay [Fm]đêm..."
+        placeholder="Nhập lời và đặt hợp âm trong ngoặc vuông, note trong dấu /, Ví dụ: [C]Ngày mai /hát nhỏ/ em đi..."
         value={content}
         onChange={e => setContent(e.target.value)}
       />
@@ -385,7 +527,7 @@ function SongEditor({ onSave, onCancel, initialData }) {
                alert("Vui lòng đặt mật khẩu cho bài hát!");
                return;
             }
-            onSave({ title, author, content, key, songPassword });
+            onSave({ title, author, content, key, songPassword, refLink });
           }}
         >
           {initialData ? "LƯU THAY ĐỔI" : "ĐĂNG BÀI HÁT"}
