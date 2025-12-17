@@ -1,37 +1,60 @@
-// src/LoginGuard.jsx
-import React, { useState } from 'react';
-import { APP_CONFIG } from './config';
+import React, { useState, useEffect } from 'react';
+import { db } from './firebase'; // Import db từ cấu hình firebase của bạn
+import { doc, getDoc } from 'firebase/firestore';
 
 function LoginGuard({ children }) {
   const [password, setPassword] = useState("");
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [error, setError] = useState("");
+  const [dbPassword, setDbPassword] = useState(null); // Lưu pass lấy từ Firebase
+  const [loading, setLoading] = useState(true);
+
+  // Lấy mật khẩu từ Firebase Console khi web load
+  useEffect(() => {
+    const fetchPassword = async () => {
+      try {
+        const docRef = doc(db, "Settings", "web_config");
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          setDbPassword(docSnap.data().ACCESS_PASSWORD);
+        } else {
+          console.error("Không tìm thấy document app_config trên Firebase!");
+        }
+      } catch (err) {
+        console.error("Lỗi lấy pass từ Firebase:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPassword();
+  }, []);
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (password === APP_CONFIG.ACCESS_PASSWORD) {
+    if (dbPassword && password === dbPassword) {
       setIsAuthorized(true);
       setError("");
     } else {
-      setError("Mật khẩu không chính xác!");
+      setError("Mật khẩu truy cập không chính xác!");
     }
   };
+
+  if (loading) return <div>Đang kiểm tra bảo mật...</div>;
 
   if (!isAuthorized) {
     return (
       <div style={styles.overlay}>
         <form onSubmit={handleLogin} style={styles.form}>
-          <h2 style={{color: '#d71920'}}>Khang Ma Poh</h2>
-          <p>Vui lòng nhập mật khẩu để truy cập</p>
+          <h2>Xác minh quyền truy cập</h2>
           <input 
             type="password" 
             value={password} 
             onChange={(e) => setPassword(e.target.value)}
             style={styles.input}
-            placeholder="Mật khẩu..."
-            autoFocus
+            placeholder="Nhập mật khẩu hệ thống..."
           />
-          {error && <p style={styles.error}>{error}</p>}
+          {error && <p style={{color: 'red'}}>{error}</p>}
           <button type="submit" style={styles.button}>VÀO HỆ THỐNG</button>
         </form>
       </div>

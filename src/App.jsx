@@ -142,7 +142,7 @@ function App() {
             placeholder="Tìm theo tên bài hát hoặc tác giả..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #edededff' }}
+            style={{ width: '93%', padding: '12px', borderRadius: '8px', border: '1px solid #edededff' }}
           />
         </div>
 
@@ -280,7 +280,7 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
             🗑 Xóa bài
           </button>
       </div>
-      
+
       {embedUrl && (
         <div className="video-wrapper">
           <div className="video-responsive">
