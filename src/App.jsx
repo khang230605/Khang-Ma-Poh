@@ -166,12 +166,17 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
   // 1. Thêm state để quản lý cỡ chữ (mặc định là 1.2 rem)
   const [fontSize, setFontSize] = useState(1.2);
 
+  // State để hiện/ẩn hợp âm
+  const [showChords, setShowChords] = useState(true);
+
   const renderContent = (content) => {
     const parts = content.split(/(\[[^\]]+\])/g);
     return parts.map((part, index) => {
       if (part.startsWith('[') && part.endsWith(']')) {
         const chordName = part.slice(1, -1);
         const newChord = transposeChord(chordName, transpose);
+        // Nếu showChords là false, trả về null (ẩn hợp âm)
+        if (!showChords) return null;
         return <span key={index} className="chord">{newChord}</span>;
       }
       return <span key={index}>{part}</span>;
@@ -203,6 +208,8 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
       alert("Sai mật khẩu, không thể xóa!");
     }
   };
+
+  
 
   return (
     <div className="song-viewer">
@@ -259,6 +266,21 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
               />
             ))}
           </div>
+
+          {/* 3. Nút Hiện/Ẩn hợp âm */}
+          <button 
+            onClick={() => setShowChords(!showChords)}
+            style={{
+              backgroundColor: showChords ? '#e8f5e9' : '#ffebee',
+              color: showChords ? '#2e7d32' : '#c62828',
+              border: '1px solid currentColor',
+              padding: '5px 15px',
+              borderRadius: '20px',
+              fontSize: '0.9rem'
+            }}
+          >
+            {showChords ? "● Hiện hợp âm" : "○ Ẩn hợp âm"}
+          </button>
 
         </div>
 
