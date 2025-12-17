@@ -4,36 +4,29 @@ import myLogo from './assets/logo.png';
 // Import Firebase
 import { db } from './firebase';
 import { collection, addDoc, getDocs, query, orderBy } from "firebase/firestore";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, deleteDoc } from "firebase/firestore";
 // Import LoginGuard
 import LoginGuard from './LoginGuard';  
+  
+// Các màu hợp âm gợi ý
+const colorOptions = ['#d71920', '#0056b3', '#28a745', '#6f42c1', '#fd7e14'];
 
 
-// Dữ liệu mẫu (Sau này sẽ lấy từ Database)
-const initialSongs = [
-  {
-    id: 1,
-    title: "Có những tiếng hát",
-    author: "Phan Mạnh Quỳnh",
-    postedBy: "Khang Ma Poh",
-    updatedAt: "15/12/2025",
-    content: "[C]Có những tiếng hát tôi muốn [D]đem cho đời \nMà làn [F]môi không nên [C]lời"
-  },
-  {
-    id: 2,
-    title: "Ngày mai em đi",
-    author: "Thái Thịnh",
-    postedBy: "Khang Ma Poh",
-    updatedAt: "14/12/2025",
-    content: "[Am]Ngày mai em [Dm]đi, biển [G]nhớ tên em gọi [C]về"
-  }
-];
 
 function App() {
   const [songs, setSongs] = useState([]);
   const [selectedSong, setSelectedSong] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editingData, setEditingData] = useState(null); // Lưu thông tin bài hát đang được chọn để sửa
+  // Sáng tối
+const [theme, setTheme] = useState('light'); // 'light' hoặc 'dark'
+const [chordColor, setChordColor] = useState('#d71920');
+  
+  // Cập nhật thuộc tính của thẻ <html> mỗi khi theme hoặc màu đổi
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.style.setProperty('--chord-color', chordColor);
+  }, [theme, chordColor]);
 
   // 1. Hàm lấy danh sách bài hát từ Firebase
   const fetchSongs = async () => {
@@ -83,13 +76,38 @@ function App() {
     setIsEditing(true);
   };
 
+  // 4. Hàm xóa bài hát
+  const handleDelete = async (songId) => {
+    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa vĩnh viễn bài hát này không?");
+    if (!confirmDelete) return;
+
+    try {
+      const songRef = doc(db, "songs", songId);
+      await deleteDoc(songRef);
+      
+      alert("Đã xóa bài hát thành công!");
+      await fetchSongs(); // Tải lại danh sách
+      setSelectedSong(null); // Quay về trang chủ
+    } catch (e) {
+      console.error("Lỗi khi xóa: ", e);
+      alert("Không thể xóa bài hát!");
+    }
+  };
+
   return (
+  
+  
   <LoginGuard>
   <div className="container">
     {/* Nội dung App hiện tại của bạn nằm hết ở đây */}
     <div className="container">
       <header>
         {/* Thay thế h1 bằng một thẻ div hoặc span chứa ảnh logo */}
+
+        <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+          {theme === 'light' ? '🌙 Tối' : '☀️ Sáng'}
+        </button>
+
         <div 
           className="logo-container"
           onClick={() => { setSelectedSong(null); setIsEditing(false); setEditingData(null); }} 
@@ -119,6 +137,10 @@ function App() {
           song={selectedSong} 
           onBack={() => setSelectedSong(null)} 
           onEdit={startEditing} // Truyền hàm này vào để trong trang chi tiết bấm được nút Sửa
+          onDelete={handleDelete}
+          // 2. TRUYỀN DỮ LIỆU XUỐNG ĐÂY
+          chordColor={chordColor} 
+          setChordColor={setChordColor}
         />
       ) : (
         <div className="song-list">
@@ -126,7 +148,7 @@ function App() {
           {songs.map(song => (
             <div key={song.id} className="song-item" onClick={() => setSelectedSong(song)}>
               <h3>{song.title} - <span className="author">{song.author}</span></h3>
-              <p className="meta">Đăng bởi: {song.postedBy} • Cập nhật: {song.updatedAt}</p>
+              <p className="meta">Đăng bởi: {song.author} • Cập nhật: {song.updatedAt}</p>
             </div>
           ))}
         </div>
@@ -139,7 +161,7 @@ function App() {
 
 import { transposeChord } from './chordLogic'; // Đảm bảo file này nằm cùng thư mục src
 
-function SongDetail({ song, onBack, onEdit }) {
+function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor }) {
   const [transpose, setTranspose] = useState(0);
   // 1. Thêm state để quản lý cỡ chữ (mặc định là 1.2 rem)
   const [fontSize, setFontSize] = useState(1.2);
@@ -170,16 +192,35 @@ function SongDetail({ song, onBack, onEdit }) {
     }
   };
 
+  // Delete
+  const handleDeleteClick = () => {
+    const inputPass = prompt("Nhập mật khẩu bài hát để XÓA:");
+    if (inputPass === null) return;
+
+    if (inputPass === song.songPassword) {
+      onDelete(song.id); // Gọi hàm xóa từ App truyền xuống
+    } else {
+      alert("Sai mật khẩu, không thể xóa!");
+    }
+  };
+
   return (
     <div className="song-viewer">
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
         <button className="btn-back" onClick={onBack}>← Danh sách</button>
         <button onClick={handleEditClick}>⚙ Chỉnh sửa</button>
+        {/* Nút Xóa mới */}
+          <button 
+            onClick={handleDeleteClick}
+            style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none' }}
+          >
+            🗑 Xóa bài
+          </button>
       </div>
       
       <div className="song-header">
         <h2 style={{fontSize: '2.5rem', marginBottom: '5px'}}>{song.title}</h2>
-        <p style={{fontSize: '1.2rem', color: '#666', marginTop: '0'}}>Sáng tác: {song.author}</p>
+        <p style={{fontSize: '1.2rem', color: '#666', marginTop: '0'}}>Arranger: {song.author}</p>
         
         <div className="controls-row" style={{display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '20px'}}>
           {/* Cụm chỉnh Tone */}
@@ -198,7 +239,29 @@ function SongDetail({ song, onBack, onEdit }) {
             <button onClick={() => setFontSize(prev => Math.max(0.8, prev - 0.1))}>A-</button>
             <button onClick={() => setFontSize(prev => Math.min(2.5, prev + 0.1))}>A+</button>
           </div>
+
+          {/* 4. Cụm chọn màu (Bây giờ chordColor đã được xác định) */}
+          <div className="color-picker" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{fontSize: '0.9rem'}}>Màu:</span>
+            {colorOptions.map(color => (
+              <div 
+                key={color}
+                onClick={() => setChordColor(color)}
+                style={{ 
+                  width: '24px', 
+                  height: '24px', 
+                  backgroundColor: color, 
+                  borderRadius: '50%', 
+                  cursor: 'pointer', 
+                  border: chordColor === color ? '2px solid #333' : '1px solid #ccc',
+                  boxSizing: 'border-box'
+                }}
+              />
+            ))}
+          </div>
+
         </div>
+
       </div>
 
       <hr style={{margin: '30px 0', opacity: 0.3}} />
@@ -248,7 +311,7 @@ function SongEditor({ onSave, onCancel, initialData }) {
         />
         <input 
           className="input-author"
-          placeholder="Tác giả (Sáng tác)..." 
+          placeholder="Tên Arranger" 
           value={author} 
           onChange={e => setAuthor(e.target.value)} 
         />

@@ -231,3 +231,52 @@ button:hover {
 .app-logo:hover {
   transform: scale(1.25); /* Hiệu ứng phóng to nhẹ khi di chuột vào */
 }
+
+/* Chế độ Sáng / Tối  */
+/* Mặc định là chế độ Sáng */
+:root {
+  --bg-color: #ffffff;
+  --text-color: #333333;
+  --container-bg: #ffffff;
+  --control-bg: #f8f9fa;
+  --chord-color: #d71920; /* Màu đỏ của bạn */
+}
+
+/* Chế độ Tối */
+[data-theme='dark'] {
+  --bg-color: #1a1a1a;
+  --text-color: #f4f4f4;
+  --container-bg: #2d2d2d;
+  --control-bg: #3d3d3d;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: all 0.3s ease; /* Hiệu ứng chuyển màu mượt mà */
+}
+
+.container {
+  background-color: var(--container-bg);
+}
+
+.controls-row {
+  background: var(--control-bg);
+}
+
+/* Hợp âm sẽ dùng biến --chord-color để bạn có thể đổi màu tùy thích */
+.chord {
+  background-color: var(--chord-color) !important;
+  color: white;
+}
+
+/* Delete Btn */
+.btn-delete {
+  background-color: #ff4d4d !important;
+  color: white !important;
+  border: none !important;
+}
+
+.btn-delete:hover {
+  background-color: #cc0000 !important;
+}
