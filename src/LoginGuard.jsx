@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { db } from './firebase'; // Import db từ cấu hình firebase của bạn
 import { doc, getDoc } from 'firebase/firestore';
+import myLogo from './assets/logonoback.png'; // Đường dẫn tới logo của bạn
+import BackgroundMusic from './BackgroundMusic';
+import bgAudio from './assets/BeatKhongCon_BGM.mp3'; // Đường dẫn tới file nhạc nền
 
 function LoginGuard({ children }) {
   const [password, setPassword] = useState("");
@@ -46,16 +49,29 @@ function LoginGuard({ children }) {
     return (
       <div style={styles.overlay}>
         <form onSubmit={handleLogin} style={styles.form}>
-          <h2>Xác minh quyền truy cập</h2>
-          <input 
-            type="password" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-            placeholder="Nhập mật khẩu hệ thống..."
-          />
-          {error && <p style={{color: 'red'}}>{error}</p>}
-          <button type="submit" style={styles.button}>VÀO HỆ THỐNG</button>
+            {/* 1. Phần Logo */}
+            <div className="logo-login-container" onClick={() => window.location.reload()}>
+              <img src={myLogo} alt="Logo" className="app-logo-login" />
+            </div>
+
+            <h2 style={styles.title}>Khang Ma Poh</h2>
+
+            {/* 2. CHÈN NHẠC NỀN VÀO ĐÂY */}
+            {/* Bạn đặt nó dưới tiêu đề để giao diện cân đối */}
+            <BackgroundMusic audioUrl={bgAudio} />
+            
+            <div style={{ marginTop: '20px' }}> {/* Thêm chút khoảng cách */}
+              <input 
+                type="password"
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
+                style={styles.input}
+                placeholder="Nhập mật khẩu hệ thống..."
+                autoFocus
+              />
+              {error && <p style={{color: 'red'}}>{error}</p>}
+              <button type="submit" style={styles.button}>VÀO HỆ THỐNG</button>
+            </div>
         </form>
       </div>
     );

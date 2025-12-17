@@ -346,3 +346,24 @@ body {
   height: 100%;
   border: none;
 }
+
+/* Container chứa logo */
+.logo-login-container {
+  display: flex;
+  justify-content: center; /* Căn giữa logo theo chiều ngang */
+  margin-bottom: 20px;     /* Khoảng cách dưới logo */
+  cursor: pointer;
+}
+
+/* Style cho hình ảnh logo */
+.app-logo-login {
+  max-width: 120px;        /* Chỉnh kích thước logo nhỏ gọn */
+  height: auto;
+  border-radius: 50%;      /* Nếu logo tròn thì thêm cái này */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* Đổ bóng nhẹ cho sang */
+  transition: transform 0.3s ease;
+}
+
+.app-logo-login:hover {
+  transform: scale(1.05);  /* Hiệu ứng phóng to nhẹ khi di chuột vào */
+}
