@@ -38,7 +38,7 @@ const BackgroundMusic = ({ audioUrl }) => {
             max="1" 
             step="0.01" 
             value={volume} 
-            onChange={(e) => setVolume(e.target.value)}
+            onInput={(e) => setVolume(parseFloat(e.target.value))}
             style={styles.slider}
           />
           <span style={{ fontSize: '12px' }}>🔊</span>

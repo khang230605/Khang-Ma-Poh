@@ -72,6 +72,7 @@ function LoginGuard({ children }) {
               {error && <p style={{color: 'red'}}>{error}</p>}
               <button type="submit" style={styles.button}>VÀO HỆ THỐNG</button>
             </div>
+            
         </form>
       </div>
     );
