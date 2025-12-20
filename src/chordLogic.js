@@ -1,21 +1,36 @@
-// Danh sách 12 nốt nhạc cơ bản
-const chromaticScale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+export const transposeChord = (chord, semiTones) => {
+  const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-export const transposeChord = (chord, semitones) => {
-  // 1. Tách hợp âm (Ví dụ: "F#m7" -> nốt "F#", hậu tố "m7")
-  const match = chord.match(/^([A-G][#b]?)(.*)/);
-  if (!match) return chord;
+  // Hàm phụ để xử lý tăng tone cho một nốt đơn lẻ
+  const transposeSingleNote = (note) => {
+    // Tìm nốt gốc và các ký hiệu thăng/giáng
+    let noteName = note[0];
+    if (note[1] === '#' || note[1] === 'b') {
+      noteName += note[1];
+    }
 
-  const root = match[1]; // Nốt nhạc (tiền tố)
-  const suffix = match[2]; // Kiểu hợp âm (hậu tố)
+    // Chuẩn hóa nốt giáng về nốt thăng để tìm trong mảng notes
+    const normalizationMap = { 'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#' };
+    const normalizedNote = normalizationMap[noteName] || noteName;
 
-  // 2. Tìm vị trí nốt cũ trong mảng 12 nốt
-  let index = chromaticScale.indexOf(root);
-  if (index === -1) return chord;
+    const currentIndex = notes.indexOf(normalizedNote);
+    if (currentIndex === -1) return note; // Không tìm thấy thì trả về gốc
 
-  // 3. Tính toán vị trí nốt mới (xoay vòng trong mảng 12)
-  let newIndex = (index + semitones) % 12;
-  if (newIndex < 0) newIndex += 12;
+    let newIndex = (currentIndex + semiTones) % 12;
+    if (newIndex < 0) newIndex += 12;
 
-  return chromaticScale[newIndex] + suffix;
+    // Trả về nốt mới kèm theo các hậu tố (m, 7, maj7...) nếu có
+    const suffix = note.slice(noteName.length);
+    return notes[newIndex] + suffix;
+  };
+
+  // LOGIC CHÍNH: Kiểm tra nếu có dấu gạch chéo (Slash Chord)
+  if (chord.includes('/')) {
+    const parts = chord.split('/');
+    // Transpose cả hai phần rồi ghép lại bằng dấu /
+    return transposeSingleNote(parts[0]) + '/' + transposeSingleNote(parts[1]);
+  }
+
+  // Nếu không có dấu /, xử lý như bình thường
+  return transposeSingleNote(chord);
 };
