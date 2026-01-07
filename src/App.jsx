@@ -1,12 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // <--- Thêm useRef vào đây
 import './App.css';
-import myLogo from './assets/logonoback.png';
-// Import Firebase
+
+// --- PHẦN IMPORT ẢNH (Chỉ khai báo 1 lần duy nhất) ---
+import myLogo from './assets/logonoback.png'; 
+import hdcgLogo from './assets/hdcglogo.jpg'; // (Hoặc .jpg tùy file bạn lưu)
+
+// --- PHẦN IMPORT FIREBASE ---
 import { db } from './firebase';
-import { collection, addDoc, getDocs, query, orderBy } from "firebase/firestore";
-import { doc, updateDoc, deleteDoc } from "firebase/firestore";
-// Import LoginGuard
-import LoginGuard from './LoginGuard';  
+import { 
+  collection, addDoc, getDocs, query, orderBy, 
+  doc, updateDoc, deleteDoc, getDoc 
+} from "firebase/firestore";
+
+// --- CÁC COMPONENT KHÁC ---
+import LoginGuard from './LoginGuard';
+import { transposeChord } from './chordLogic';
+import { getYouTubeEmbedUrl } from './youtubeLink';
+
   
 // Các màu hợp âm gợi ý
 const colorOptions = ['#d71920', '#0056b3', '#28a745', '#6f42c1', '#fd7e14'];
@@ -32,6 +42,65 @@ function App() {
     document.documentElement.style.setProperty('--chord-color', chordColor);
   }, [theme, chordColor]);
 
+  // HDCG Mode
+  const [isHDCGMode, setIsHDCGMode] = useState(false); // Xác định đang ở chế độ HDCG hay thường
+  const [hdcgSystemPassword, setHdcgSystemPassword] = useState(""); // Lưu pass lấy từ Firebase
+
+  // Biến cờ hiệu để đảm bảo chỉ chạy kiểm tra 1 lần duy nhất
+  const hasCheckedInit = useRef(false);
+
+  useEffect(() => {
+    // Nếu đã kiểm tra rồi thì dừng lại ngay, không chạy tiếp (Khắc phục lỗi hỏi 2 lần)
+    if (hasCheckedInit.current) return;
+    hasCheckedInit.current = true;
+
+    const initApp = async () => {
+      let fetchedPass = "";
+
+      // 1. Lấy mật khẩu từ Firebase
+      try {
+        const docRef = doc(db, "Settings", "hdcg_config");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          fetchedPass = docSnap.data().ACCESS_PASSWORD;
+          setHdcgSystemPassword(fetchedPass);
+        }
+      } catch (e) {
+        console.error("Lỗi lấy pass HDCG:", e);
+      }
+
+      // 2. Kiểm tra phiên đăng nhập cũ (Tính năng: Qua hệ thống luôn)
+      const isSessionActive = sessionStorage.getItem("HDCG_SESSION") === "true";
+
+      if (isSessionActive) {
+        // Nếu trước đó đã nhập đúng rồi -> Cho vào luôn không hỏi nữa
+        setIsHDCGMode(true);
+        if (window.location.pathname !== '/hdcg') {
+           window.history.pushState(null, "", "/hdcg");
+        }
+      } 
+      // 3. Nếu chưa đăng nhập mà truy cập bằng link /hdcg -> Mới hỏi
+      else if (window.location.pathname === '/hdcg') {
+        // Dùng setTimeout nhỏ để đảm bảo giao diện load xong mới hiện bảng hỏi
+        setTimeout(() => {
+          const input = prompt("🔒 Đây là khu vực riêng tư. Nhập mật khẩu để tiếp tục:");
+          
+          if (input === fetchedPass && fetchedPass !== "") {
+            setIsHDCGMode(true);
+            sessionStorage.setItem("HDCG_SESSION", "true"); // Lưu lại để tí F5 không bị hỏi lại
+            alert("Đã xác minh danh tính! Chào mừng trở lại.");
+          } else {
+            alert("Mật khẩu sai! Đang quay về sảnh chính.");
+            setIsHDCGMode(false);
+            window.history.pushState(null, "", "/");
+          }
+        }, 100);
+      }
+    };
+
+    initApp();
+  }, []);
+
   // Lọc danh sách bài hát dựa trên từ khóa tìm kiếm
   const filteredSongs = songs.filter(song => 
     song.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -40,35 +109,42 @@ function App() {
   
   // 1. Hàm lấy danh sách bài hát từ Firebase
   const fetchSongs = async () => {
-    const q = query(collection(db, "songs"), orderBy("createdAt", "desc"));
+    // Nếu là HDCG Mode thì lấy ở "hdcg_songs", ngược lại lấy "songs"
+    const collectionName = isHDCGMode ? "hdcg_songs" : "songs"; 
+    
+    const q = query(collection(db, collectionName), orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
     const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setSongs(data);
   };
 
+  // Quan trọng: Thêm isHDCGMode vào dependency của useEffect gọi fetchSongs
   useEffect(() => {
     fetchSongs();
-  }, []);
+  }, [isHDCGMode]); // <--- Khi đổi chế độ, tự động load lại nhạc
 
   // 2. Hàm lưu (Xử lý cả Tạo mới và Chỉnh sửa)
   const handleSave = async (songFormContent) => {
+    // Xác định collection
+    const collectionName = isHDCGMode ? "hdcg_songs" : "songs";
+
     try {
       if (editingData) {
-        // Trường hợp: ĐANG CHỈNH SỬA
-        const songRef = doc(db, "songs", editingData.id);
+        // ĐANG CHỈNH SỬA
+        const songRef = doc(db, collectionName, editingData.id); // <--- Dùng collectionName
         await updateDoc(songRef, {
           ...songFormContent,
           updatedAt: new Date().toLocaleDateString('vi-VN')
         });
       } else {
-        // Trường hợp: TẠO MỚI
-        await addDoc(collection(db, "songs"), {
+        // TẠO MỚI
+        await addDoc(collection(db, collectionName), { // <--- Dùng collectionName
           ...songFormContent,
-          postedBy: "Khang Ma Poh",
+          postedBy: isHDCGMode ? "HDCG Admin" : "Khang Ma Poh", // Có thể đổi tên người đăng nếu muốn
           createdAt: new Date().getTime(),
           updatedAt: new Date().toLocaleDateString('vi-VN')
         });
-      }
+      } 
 
       await fetchSongs(); // Tải lại danh sách mới nhất
       setIsEditing(false); // Đóng form editor
@@ -88,19 +164,44 @@ function App() {
 
   // 4. Hàm xóa bài hát
   const handleDelete = async (songId) => {
-    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa vĩnh viễn bài hát này không?");
+    const confirmDelete = window.confirm("Xóa vĩnh viễn bài hát này?");
     if (!confirmDelete) return;
 
+    // Xác định collection
+    const collectionName = isHDCGMode ? "hdcg_songs" : "songs";
+
     try {
-      const songRef = doc(db, "songs", songId);
+      const songRef = doc(db, collectionName, songId); // <--- Dùng collectionName
       await deleteDoc(songRef);
-      
+      // ... (giữ nguyên đoạn dưới)
       alert("Đã xóa bài hát thành công!");
-      await fetchSongs(); // Tải lại danh sách
-      setSelectedSong(null); // Quay về trang chủ
+      await fetchSongs();
+      setSelectedSong(null);
     } catch (e) {
       console.error("Lỗi khi xóa: ", e);
       alert("Không thể xóa bài hát!");
+    }
+  };
+  
+  // 5. Hàm chuyển đổi chế độ HDCG  
+  const toggleHDCGMode = () => {
+    if (isHDCGMode) {
+      // Khi thoát ra -> Xóa phiên đăng nhập
+      setIsHDCGMode(false);
+      sessionStorage.removeItem("HDCG_SESSION"); // <--- Thêm dòng này
+      window.history.pushState(null, "", "/");
+      alert("Đã đăng xuất khỏi HDCG.");
+      return;
+    }
+
+    const input = prompt("Nhập mật khẩu truy cập HDCG:");
+    if (input === hdcgSystemPassword) {
+      setIsHDCGMode(true);
+      sessionStorage.setItem("HDCG_SESSION", "true"); // <--- Thêm dòng này: Lưu lại là đã vào rồi
+      window.history.pushState(null, "", "/hdcg");
+      alert("Truy cập thành công!");
+    } else if (input !== null) {
+      alert("Sai mật khẩu!");
     }
   };
 
@@ -114,10 +215,23 @@ function App() {
       <header>
         {/* Thay thế h1 bằng một thẻ div hoặc span chứa ảnh logo */}
 
+      <div className="header-controls"> {/* Nên bọc 2 nút này vào 1 div để dễ căn chỉnh */}
+    
         <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
           {theme === 'light' ? '🌙 Tối' : '☀️ Sáng'}
         </button>
 
+        {/* NÚT HDCG LOGO MỚI */}
+        <div 
+          className={`hdcg-btn ${isHDCGMode ? 'active' : ''}`} 
+          onClick={toggleHDCGMode}
+          title={isHDCGMode ? "Quay về trang chủ" : "Truy cập HDCG"}
+        >
+          <img src={hdcgLogo} alt="HDCG Access" />
+        </div>
+
+      </div>
+      
         <div 
           className="logo-container"
           onClick={() => { setSelectedSong(null); setIsEditing(false); setEditingData(null); }} 
@@ -193,8 +307,7 @@ function App() {
   );
 }
 
-import { transposeChord } from './chordLogic'; // Đảm bảo file này nằm cùng thư mục src
-import { getYouTubeEmbedUrl } from './youtubeLink';
+
 function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor }) {
   const [transpose, setTranspose] = useState(0);
   // 1. Thêm state để quản lý cỡ chữ (mặc định là 1.2 rem)
@@ -265,6 +378,7 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
     }
   };
 
+  
   
 
   return (

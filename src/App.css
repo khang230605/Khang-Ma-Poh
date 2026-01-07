@@ -33,7 +33,7 @@ body {
 header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start; /* Đổi từ center sang flex-start để căn trên cùng */
   margin-bottom: 20px;
 }
 
@@ -396,4 +396,46 @@ input[type="range"]::-webkit-slider-thumb {
   background: #d71920; /* Màu đỏ của bạn */
   margin-top: -6px; /* Căn giữa nút kéo với thanh ray */
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+
+/* Thêm class mới cho nhóm nút điều khiển bên trái/phải */
+.header-controls {
+  display: flex;
+  flex-direction: column; /* Xếp dọc: Nút theme ở trên, Logo HDCG ở dưới */
+  gap: 10px;
+  align-items: center;
+}
+
+/* Style cho nút HDCG Logo */
+.hdcg-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  background: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.hdcg-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Hoặc cover tùy hình */
+}
+
+.hdcg-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Khi đang kích hoạt chế độ HDCG thì viền sáng lên */
+.hdcg-btn.active {
+  border-color: #28a745; /* Màu xanh lá hoặc màu gì bạn thích */
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
 }
