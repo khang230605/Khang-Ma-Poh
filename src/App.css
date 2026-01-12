@@ -439,3 +439,46 @@ input[type="range"]::-webkit-slider-thumb {
   border-color: #28a745; /* Màu xanh lá hoặc màu gì bạn thích */
   box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
 }
+
+/* Nút Tone Finder - Phong cách Music Player xịn */
+.tone-btn {
+  
+  /* Kích thước & Hình dáng */
+  width: 50px;
+  height: 50px;
+  border-radius: 60%; /* Hình tròn */
+  
+  /* MÀU SẮC CHỦ ĐẠO (Gradient Tím - Hồng) */
+  background: linear-gradient(135deg, #fdc2ff, #7797ff); 
+  /* Hoặc màu tím đậm chất chơi: background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+  
+  /* Icon màu trắng để nổi bật trên nền tím */
+  color: #ffffff;
+  font-size: 28px; /* Icon to rõ */
+  
+  /* Canh giữa icon */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Hiệu ứng bóng đổ (Glow) */
+  box-shadow: 0 4px 15px rgba(70, 100, 220, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2); /* Viền kính mờ */
+  cursor: pointer;
+  z-index: 1000;
+  
+  /* Hiệu ứng chuyển động mượt mà */
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Hiệu ứng khi rê chuột vào */
+.tone-btn:hover {
+  transform: scale(1.15) rotate(15deg); /* Phóng to và xoay nhẹ */
+  background: linear-gradient(135deg, #c88bc4, #5a7ce6); /* Đổi màu sáng hơn chút */
+  box-shadow: 0 10px 25px rgba(70, 100, 220, 0.6); /* Bóng đổ đậm hơn */
+}
+
+/* Hiệu ứng khi bấm xuống */
+.tone-btn:active {
+  transform: scale(0.95);
+}

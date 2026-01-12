@@ -16,6 +16,7 @@ import {
 import LoginGuard from './LoginGuard';
 import { transposeChord } from './chordLogic';
 import { getYouTubeEmbedUrl } from './youtubeLink';
+import ToneFinder from './ToneFinder';
 
   
 // Các màu hợp âm gợi ý
@@ -45,6 +46,17 @@ function App() {
   // HDCG Mode
   const [isHDCGMode, setIsHDCGMode] = useState(false); // Xác định đang ở chế độ HDCG hay thường
   const [hdcgSystemPassword, setHdcgSystemPassword] = useState(""); // Lưu pass lấy từ Firebase
+
+  // Kiểm tra nếu URL là /tonefinder thì hiển thị ToneFinder
+  const [isToneFinder, setIsToneFinder] = useState(false);
+
+  // Tìm đến useEffect kiểm tra URL cũ, THÊM đoạn kiểm tra /tonefinder vào đó
+  // (Hoặc nếu lười tìm, bạn có thể tạo một useEffect mới riêng biệt như này cũng được):
+  useEffect(() => {
+    if (window.location.pathname === '/tonefinder') {
+      setIsToneFinder(true);
+    }
+  }, []);
 
   // Biến cờ hiệu để đảm bảo chỉ chạy kiểm tra 1 lần duy nhất
   const hasCheckedInit = useRef(false);
@@ -205,6 +217,14 @@ function App() {
     }
   };
 
+  // Nếu đang ở chế độ Tone Finder thì hiển thị nó thay vì App chính
+  if (isToneFinder) {
+    return <ToneFinder onBack={() => {
+      setIsToneFinder(false);
+      window.history.pushState(null, "", "/"); // Quay về trang chủ
+    }} />;
+  }
+
   return (
   
   
@@ -228,6 +248,18 @@ function App() {
           title={isHDCGMode ? "Quay về trang chủ" : "Truy cập HDCG"}
         >
           <img src={hdcgLogo} alt="HDCG Access" />
+        </div>
+
+        {/* Nút Tone Finder (Thêm vào dưới nút HDCG) */}
+        <div 
+          className="tone-btn"
+          onClick={() => {
+            setIsToneFinder(true);
+            window.history.pushState(null, "", "/tonefinder");
+          }}
+          title="Dò Tone Nhạc"
+        >
+          🎵
         </div>
 
       </div>
