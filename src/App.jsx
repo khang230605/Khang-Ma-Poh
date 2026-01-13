@@ -17,8 +17,8 @@ import LoginGuard from './LoginGuard';
 import { transposeChord } from './chordLogic';
 import { getYouTubeEmbedUrl } from './youtubeLink';
 import ToneFinder from './ToneFinder';
+import ChordViewer from './ChordViewer';
 
-  
 // Các màu hợp âm gợi ý
 const colorOptions = ['#d71920', '#0056b3', '#28a745', '#6f42c1', '#fd7e14'];
 
@@ -348,6 +348,9 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
   // State để hiện/ẩn hợp âm
   const [showChords, setShowChords] = useState(true);
 
+  // State để lưu popup hợp âm
+  const [selectedChord, setSelectedChord] = useState(null);
+
   // State để lưu link nhúng YouTube
   const embedUrl = getYouTubeEmbedUrl(song.refLink);
 
@@ -361,7 +364,17 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
         if (!showChords) return null;
         const chordName = part.slice(1, -1);
         const newChord = transposeChord(chordName, transpose);
-        return <span key={index} className="chord">{newChord}</span>;
+        return (
+          <span 
+            key={index} 
+            className="chord"
+            onClick={() => setSelectedChord(newChord)} // Bấm vào thì set state
+            style={{ cursor: 'pointer' }} // Hiện bàn tay trỏ chuột
+            title="Bấm để xem thế tay"
+          >
+            {newChord}
+          </span>
+        );
       }
 
       // 2. Note Ghi chú (Trên đầu lời nhạc)
@@ -515,6 +528,14 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
       <div className="song-content" style={{ fontSize: `${fontSize}rem`, lineHeight: `${fontSize * 2.5}` }}>
         {renderContent(song.content)}
       </div>
+
+      {/* Hiển thị popup hợp âm nếu có */}
+      {selectedChord && (
+        <ChordViewer 
+          chord={selectedChord} 
+          onClose={() => setSelectedChord(null)} 
+        />
+      )}
     </div>
   );
 }
