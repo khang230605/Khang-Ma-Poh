@@ -18,6 +18,7 @@ import { transposeChord } from './chordLogic';
 import { getYouTubeEmbedUrl } from './youtubeLink';
 import ToneFinder from './ToneFinder';
 import ChordViewer from './ChordViewer';
+import SetlistManager from './SetlistManager';
 
 
 // --- COMPONENT SIDEBAR MỚI ---
@@ -56,6 +57,15 @@ const Sidebar = ({
       >
         <div className="nav-icon">🎵</div>
         <span className="nav-text">Dò Tone</span>
+      </div>
+
+      {/* 3. Nút Setlist Manager */}
+      <div 
+        className={`nav-item ${activeTab === 'setlist' ? 'active' : ''}`}
+        onClick={() => setActiveTab('setlist')}
+      >
+        <div className="nav-icon">📋</div>
+        <span className="nav-text">Danh sách</span>
       </div>
 
       {/* 3. Nút HDCG (Dùng ảnh logo) */}
@@ -236,15 +246,17 @@ function App() {
     window.history.pushState(null, "", "/");
   };
 
-  // --- RENDER GIAO DIỆN ---
+// --- RENDER GIAO DIỆN ---
   return (
     <LoginGuard>
       <div className="app-layout">
-        {/* THANH MENU TRÁI */}
+        
+        {/* 1. THANH MENU TRÁI */}
         <Sidebar 
           activeTab={activeTab} 
           setActiveTab={(tab) => {
              setActiveTab(tab);
+             // Nếu bấm Tone thì đổi URL, các tab khác giữ nguyên
              if(tab === 'tone') window.history.pushState(null, "", "/tonefinder");
           }}
           theme={theme}
@@ -254,110 +266,111 @@ function App() {
           resetView={resetView}
         />
 
-        {/* NỘI DUNG CHÍNH (BÊN PHẢI) */}
+        {/* 2. NỘI DUNG CHÍNH (BÊN PHẢI) */}
         <div className="main-wrapper">
           <div className="container">
             
-            {/* 1. NẾU LÀ TAB TONE FINDER */}
-            {activeTab === 'tone' ? (
-              <ToneFinder onBack={() => {
-                setActiveTab('home');
-                window.history.pushState(null, "", "/");
-              }} />
-            ) : (
-              // 2. NẾU LÀ TAB HOME (LOGIC CŨ CỦA BẠN)
-              <>
-                <header>
-                   {/* Tiêu đề thay đổi tùy theo chế độ */}
-                   <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-                      <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-                        {/* Hiển thị Logo thay vì chữ Text */}
-                        <img 
-                          src={isHDCGMode ? hdcgLogo : myLogo} 
-                          alt="Header Logo" 
-                          style={{
-                            height: '60px',       /* Chiều cao cố định cho gọn */
-                            width: 'auto',        /* Chiều rộng tự động theo tỉ lệ */
-                            objectFit: 'contain', /* Đảm bảo ảnh không bị méo */
-                            display: 'block'
-                          }}
-                        />
-                        
-                        {/* Badge Private Mode giữ nguyên (nếu muốn) */}
-                        {isHDCGMode && (
-                          <span style={{
-                            background: '#28a745', 
-                            color: 'white', 
-                            padding: '4px 10px', 
-                            borderRadius: '20px', 
-                            fontSize: '0.75rem', 
-                            fontWeight: 'bold',
-                            letterSpacing: '1px',
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
-                          }}>
-                            PRIVATE MODE
-                          </span>
-                        )}
-                      </div>
-                   </div>
+            {/* --- LOGIC HIỂN THỊ THEO THỨ TỰ ƯU TIÊN --- */}
 
-                   {/* Nút tạo bài hát */}
-                   {!isEditing && !selectedSong && (
+            {/* CASE 1: ĐANG XEM CHI TIẾT BÀI HÁT (Ưu tiên cao nhất) */}
+            {selectedSong ? (
+               <SongDetail 
+                 song={selectedSong} 
+                 onBack={() => setSelectedSong(null)} 
+                 onEdit={startEditing} 
+                 onDelete={handleDelete}
+                 chordColor={chordColor} 
+                 setChordColor={setChordColor}
+               />
+
+            /* CASE 2: ĐANG SỬA HOẶC TẠO BÀI HÁT */
+            ) : isEditing ? (
+               <SongEditor 
+                 onSave={handleSave} 
+                 onCancel={() => { setIsEditing(false); setEditingData(null); }} 
+                 initialData={editingData} 
+               />
+
+            /* CASE 3: TAB DÒ TONE */
+            ) : activeTab === 'tone' ? (
+               <ToneFinder onBack={() => {
+                 setActiveTab('home');
+                 window.history.pushState(null, "", "/");
+               }} />
+
+            /* CASE 4: TAB SETLIST (DANH SÁCH NHẠC) - MỚI THÊM */
+            ) : activeTab === 'setlist' ? (
+               <SetlistManager 
+                  isHDCGMode={isHDCGMode}
+                  allSongs={songs}
+                  onSelectSong={(songShortData) => {
+                     // Logic: Khi bấm bài hát trong Setlist -> Mở SongDetail
+                     const fullSong = songs.find(s => s.id === songShortData.id);
+                     if(fullSong) setSelectedSong(fullSong);
+                     else alert("Bài hát này đã bị xóa khỏi hệ thống.");
+                  }}
+               />
+
+            /* CASE 5: TAB TRANG CHỦ (MẶC ĐỊNH) */
+            ) : (
+               <>
+                 <header>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                       {/* Logo thay đổi theo chế độ */}
+                       <img 
+                         src={isHDCGMode ? hdcgLogo : myLogo} 
+                         alt="Header Logo" 
+                         style={{
+                           height: '60px', width: 'auto', 
+                           objectFit: 'contain', display: 'block'
+                         }}
+                       />
+                       {/* Badge Private Mode */}
+                       {isHDCGMode && (
+                         <span style={{
+                           background: '#28a745', color: 'white', padding: '4px 10px', 
+                           borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', 
+                           letterSpacing: '1px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                         }}>
+                           PRIVATE MODE
+                         </span>
+                       )}
+                    </div>
+
                     <button className="btn-create" onClick={() => setIsEditing(true)}>
                       + Tạo bài hát
                     </button>
-                  )}
-                </header>
+                 </header>
 
-                {!isEditing && !selectedSong && (
-                  <div className="main-home">
-                    <div className="search-bar" style={{ marginBottom: '20px' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Tìm theo tên bài hát hoặc tác giả..." 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ width: '100%', padding: '15px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box' }}
-                      />
-                    </div>
+                 <div className="main-home">
+                   <div className="search-bar" style={{ marginBottom: '20px' }}>
+                     <input 
+                       type="text" 
+                       placeholder="Tìm theo tên bài hát hoặc tác giả..." 
+                       value={searchTerm}
+                       onChange={(e) => setSearchTerm(e.target.value)}
+                       style={{ width: '100%', padding: '15px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box' }}
+                     />
+                   </div>
 
-                    <div className="song-list">
-                      {filteredSongs.length > 0 ? (
-                        filteredSongs.map(song => (
-                          <div key={song.id} className="song-item" onClick={() => setSelectedSong(song)}>
-                            <h3>{song.title}</h3>
-                            <p className="song-meta" style={{marginTop: 'auto'}}>
-                               <span className="author-name">👤 {song.author}</span>
-                               <br/>
-                               <small style={{opacity: 0.7}}>📅 {song.updatedAt}</small>
-                            </p>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="no-result">Không tìm thấy bài hát nào phù hợp...</div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Các màn hình con: Sửa / Chi tiết */}
-                {isEditing ? (
-                  <SongEditor 
-                    onSave={handleSave} 
-                    onCancel={() => { setIsEditing(false); setEditingData(null); }} 
-                    initialData={editingData} 
-                  />
-                ) : selectedSong ? (
-                  <SongDetail 
-                    song={selectedSong} 
-                    onBack={() => setSelectedSong(null)} 
-                    onEdit={startEditing} 
-                    onDelete={handleDelete}
-                    chordColor={chordColor} 
-                    setChordColor={setChordColor}
-                  />
-                ) : null}
-              </>
+                   <div className="song-list">
+                     {filteredSongs.length > 0 ? (
+                       filteredSongs.map(song => (
+                         <div key={song.id} className="song-item" onClick={() => setSelectedSong(song)}>
+                           <h3>{song.title}</h3>
+                           <p className="song-meta" style={{marginTop: 'auto'}}>
+                              <span className="author-name">👤 {song.author}</span>
+                              <br/>
+                              <small style={{opacity: 0.7}}>📅 {song.updatedAt}</small>
+                           </p>
+                         </div>
+                       ))
+                     ) : (
+                       <div className="no-result">Không tìm thấy bài hát nào phù hợp...</div>
+                     )}
+                   </div>
+                 </div>
+               </>
             )}
 
           </div>

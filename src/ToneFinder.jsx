@@ -112,7 +112,7 @@ const ToneFinder = ({ onBack }) => {
         <img src={myLogo} alt="Logo" className="app-logo" style={{height: '100px'}} />
       </div>
       
-      <h1 style={{ color: '#d71920', margin: '0 0 10px 0' }}>Khang Tone Analyzer 🎛️</h1>
+      <h1 style={{ color: '#d71920', margin: '0 0 10px 0', fontSize: '1.5rem' }}>Khang Tone Analyzer 🎛️</h1>
       
       <div className="finder-box">
         <label htmlFor="audio-upload" className="upload-btn">
