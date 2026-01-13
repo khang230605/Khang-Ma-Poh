@@ -673,5 +673,79 @@ export const guitarChords = {
         "frets": [-1, 1, 3, 3, 4, 1],
         "fingers": [0, 1, 2, 3, 4, 1],
         "baseFret": 1
-    }
+    },
+
+    // minor7th chords
+    "Cm7": {
+    "name": "C Minor 7",
+    "frets": [-1, 3, 5, 3, 4, 3],
+    "fingers": [0, 1, 3, 1, 2, 1],
+    "baseFret": 3
+  },
+  "C#m7": {
+    "name": "C# Minor 7",
+    "frets": [-1, 4, 6, 4, 5, 4],
+    "fingers": [0, 1, 3, 1, 2, 1],
+    "baseFret": 4
+  },
+  "Dm7": {
+    "name": "D Minor 7",
+    "frets": [-1, -1, 0, 2, 1, 1],
+    "fingers": [0, 0, 0, 2, 1, 1],
+    "baseFret": 1
+  },
+  "D#m7": {
+    "name": "D# Minor 7",
+    "frets": [-1, 6, 8, 6, 7, 6],
+    "fingers": [0, 1, 3, 1, 2, 1],
+    "baseFret": 6
+  },
+  "Em7": {
+    "name": "E Minor 7",
+    "frets": [0, 2, 2, 0, 3, 0],
+    "fingers": [0, 1, 2, 0, 3, 0],
+    "baseFret": 1
+  },
+  "Fm7": {
+    "name": "F Minor 7",
+    "frets": [1, 3, 1, 1, 1, 1],
+    "fingers": [1, 3, 1, 1, 1, 1],
+    "baseFret": 1
+  },
+  "F#m7": {
+    "name": "F# Minor 7",
+    "frets": [2, 4, 2, 2, 2, 2],
+    "fingers": [1, 3, 1, 1, 1, 1],
+    "baseFret": 2
+  },
+  "Gm7": {
+    "name": "G Minor 7",
+    "frets": [3, 5, 3, 3, 3, 3],
+    "fingers": [1, 3, 1, 1, 1, 1],
+    "baseFret": 3
+  },
+  "G#m7": {
+    "name": "G# Minor 7",
+    "frets": [4, 6, 4, 4, 4, 4],
+    "fingers": [1, 3, 1, 1, 1, 1],
+    "baseFret": 4
+  },
+  "Am7": {
+    "name": "A Minor 7",
+    "frets": [-1, 0, 2, 0, 1, 0],
+    "fingers": [0, 0, 2, 0, 1, 0],
+    "baseFret": 1
+  },
+  "A#m7": {
+    "name": "A# Minor 7",
+    "frets": [-1, 1, 3, 1, 2, 1],
+    "fingers": [0, 1, 3, 1, 2, 1],
+    "baseFret": 1
+  },
+  "Bm7": {
+    "name": "B Minor 7",
+    "frets": [-1, 2, 4, 2, 3, 2],
+    "fingers": [0, 1, 3, 1, 2, 1],
+    "baseFret": 1
+  },
 };
