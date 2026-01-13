@@ -19,57 +19,115 @@ import { getYouTubeEmbedUrl } from './youtubeLink';
 import ToneFinder from './ToneFinder';
 import ChordViewer from './ChordViewer';
 
+
+// --- COMPONENT SIDEBAR MỚI ---
+const Sidebar = ({ 
+  activeTab, 
+  setActiveTab, 
+  theme, 
+  setTheme, 
+  isHDCGMode, 
+  toggleHDCGMode,
+  resetView // Hàm để quay về trang chủ sạch sẽ
+}) => {
+  return (
+    <div className="sidebar">
+      {/* Logo chính (Click để về trang chủ) */}
+      <img 
+        src={myLogo} 
+        alt="Logo" 
+        className="sidebar-logo" 
+        onClick={() => { setActiveTab('home'); resetView(); }}
+      />
+
+      {/* 1. Nút Trang chủ */}
+      <div 
+        className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
+        onClick={() => { setActiveTab('home'); resetView(); }}
+      >
+        <div className="nav-icon">🏠</div>
+        <span className="nav-text">Trang chủ</span>
+      </div>
+
+      {/* 2. Nút Tone Finder */}
+      <div 
+        className={`nav-item ${activeTab === 'tone' ? 'active' : ''}`}
+        onClick={() => setActiveTab('tone')}
+      >
+        <div className="nav-icon">🎵</div>
+        <span className="nav-text">Dò Tone</span>
+      </div>
+
+      {/* 3. Nút HDCG (Dùng ảnh logo) */}
+      <div 
+        className={`nav-item ${isHDCGMode ? 'active' : ''}`}
+        onClick={toggleHDCGMode}
+      >
+        <div className="nav-icon">
+          <div className="sidebar-img-btn">
+             <img src={hdcgLogo} alt="HDCG" />
+          </div>
+        </div>
+        <span className="nav-text">{isHDCGMode ? 'Thoát HDCG' : 'Vào HDCG'}</span>
+      </div>
+
+      {/* 4. Nút Sáng/Tối (Thêm vào menu luôn cho tiện) */}
+      <div 
+        className="nav-item"
+        onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+        style={{ marginTop: 'auto', marginBottom: '20px' }} // Đẩy xuống dưới cùng trên PC
+      >
+        <div className="nav-icon">{theme === 'light' ? '🌙' : '☀️'}</div>
+        <span className="nav-text">{theme === 'light' ? 'Chế độ Tối' : 'Chế độ Sáng'}</span>
+      </div>
+    </div>
+  );
+};
+
 // Các màu hợp âm gợi ý
 const colorOptions = ['#d71920', '#0056b3', '#28a745', '#6f42c1', '#fd7e14'];
-
-
 
 function App() {
   const [songs, setSongs] = useState([]);
   const [selectedSong, setSelectedSong] = useState(null);
-
-  // State cho ô tìm kiếm
   const [searchTerm, setSearchTerm] = useState(""); 
-
   const [isEditing, setIsEditing] = useState(false);
-  const [editingData, setEditingData] = useState(null); // Lưu thông tin bài hát đang được chọn để sửa
-  // Sáng tối
-  const [theme, setTheme] = useState('light'); // 'light' hoặc 'dark'
+  const [editingData, setEditingData] = useState(null);
+  
+  // Theme & Color
+  const [theme, setTheme] = useState('light');
   const [chordColor, setChordColor] = useState('#d71920');
   
-  // Cập nhật thuộc tính của thẻ <html> mỗi khi theme hoặc màu đổi
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.style.setProperty('--chord-color', chordColor);
   }, [theme, chordColor]);
 
   // HDCG Mode
-  const [isHDCGMode, setIsHDCGMode] = useState(false); // Xác định đang ở chế độ HDCG hay thường
-  const [hdcgSystemPassword, setHdcgSystemPassword] = useState(""); // Lưu pass lấy từ Firebase
+  const [isHDCGMode, setIsHDCGMode] = useState(false);
+  const [hdcgSystemPassword, setHdcgSystemPassword] = useState("");
 
-  // Kiểm tra nếu URL là /tonefinder thì hiển thị ToneFinder
-  const [isToneFinder, setIsToneFinder] = useState(false);
+  // Quản lý Tab hiển thị (home | tone)
+  // Thay thế logic isToneFinder cũ bằng biến activeTab cho dễ mở rộng
+  const [activeTab, setActiveTab] = useState('home');
 
-  // Tìm đến useEffect kiểm tra URL cũ, THÊM đoạn kiểm tra /tonefinder vào đó
-  // (Hoặc nếu lười tìm, bạn có thể tạo một useEffect mới riêng biệt như này cũng được):
+  // URL checking (Giữ nguyên logic cũ nhưng cập nhật state activeTab)
   useEffect(() => {
     if (window.location.pathname === '/tonefinder') {
-      setIsToneFinder(true);
+      setActiveTab('tone');
+    } else if (window.location.pathname === '/hdcg') {
+       // Logic cũ xử lý ở dưới
     }
   }, []);
 
-  // Biến cờ hiệu để đảm bảo chỉ chạy kiểm tra 1 lần duy nhất
   const hasCheckedInit = useRef(false);
 
   useEffect(() => {
-    // Nếu đã kiểm tra rồi thì dừng lại ngay, không chạy tiếp (Khắc phục lỗi hỏi 2 lần)
     if (hasCheckedInit.current) return;
     hasCheckedInit.current = true;
 
     const initApp = async () => {
       let fetchedPass = "";
-
-      // 1. Lấy mật khẩu từ Firebase
       try {
         const docRef = doc(db, "Settings", "hdcg_config");
         const docSnap = await getDoc(docRef);
@@ -77,29 +135,20 @@ function App() {
           fetchedPass = docSnap.data().ACCESS_PASSWORD;
           setHdcgSystemPassword(fetchedPass);
         }
-      } catch (e) {
-        console.error("Lỗi lấy pass HDCG:", e);
-      }
+      } catch (e) { console.error(e); }
 
-      // 2. Kiểm tra phiên đăng nhập cũ (Tính năng: Qua hệ thống luôn)
       const isSessionActive = sessionStorage.getItem("HDCG_SESSION") === "true";
-
       if (isSessionActive) {
-        // Nếu trước đó đã nhập đúng rồi -> Cho vào luôn không hỏi nữa
         setIsHDCGMode(true);
-        if (window.location.pathname !== '/hdcg') {
+        if (window.location.pathname !== '/hdcg' && window.location.pathname !== '/tonefinder') {
            window.history.pushState(null, "", "/hdcg");
         }
-      } 
-      // 3. Nếu chưa đăng nhập mà truy cập bằng link /hdcg -> Mới hỏi
-      else if (window.location.pathname === '/hdcg') {
-        // Dùng setTimeout nhỏ để đảm bảo giao diện load xong mới hiện bảng hỏi
+      } else if (window.location.pathname === '/hdcg') {
         setTimeout(() => {
           const input = prompt("🔒 Đây là khu vực riêng tư. Nhập mật khẩu để tiếp tục:");
-          
           if (input === fetchedPass && fetchedPass !== "") {
             setIsHDCGMode(true);
-            sessionStorage.setItem("HDCG_SESSION", "true"); // Lưu lại để tí F5 không bị hỏi lại
+            sessionStorage.setItem("HDCG_SESSION", "true");
             alert("Đã xác minh danh tính! Chào mừng trở lại.");
           } else {
             alert("Mật khẩu sai! Đang quay về sảnh chính.");
@@ -109,107 +158,69 @@ function App() {
         }, 100);
       }
     };
-
     initApp();
   }, []);
 
-  // Lọc danh sách bài hát dựa trên từ khóa tìm kiếm
   const filteredSongs = songs.filter(song => 
     song.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
     song.author.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  // 1. Hàm lấy danh sách bài hát từ Firebase
   const fetchSongs = async () => {
-    // Nếu là HDCG Mode thì lấy ở "hdcg_songs", ngược lại lấy "songs"
     const collectionName = isHDCGMode ? "hdcg_songs" : "songs"; 
-    
     const q = query(collection(db, collectionName), orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
     const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setSongs(data);
   };
 
-  // Quan trọng: Thêm isHDCGMode vào dependency của useEffect gọi fetchSongs
-  useEffect(() => {
-    fetchSongs();
-  }, [isHDCGMode]); // <--- Khi đổi chế độ, tự động load lại nhạc
+  useEffect(() => { fetchSongs(); }, [isHDCGMode]);
 
-  // 2. Hàm lưu (Xử lý cả Tạo mới và Chỉnh sửa)
   const handleSave = async (songFormContent) => {
-    // Xác định collection
     const collectionName = isHDCGMode ? "hdcg_songs" : "songs";
-
     try {
       if (editingData) {
-        // ĐANG CHỈNH SỬA
-        const songRef = doc(db, collectionName, editingData.id); // <--- Dùng collectionName
-        await updateDoc(songRef, {
-          ...songFormContent,
-          updatedAt: new Date().toLocaleDateString('vi-VN')
-        });
+        const songRef = doc(db, collectionName, editingData.id);
+        await updateDoc(songRef, { ...songFormContent, updatedAt: new Date().toLocaleDateString('vi-VN') });
       } else {
-        // TẠO MỚI
-        await addDoc(collection(db, collectionName), { // <--- Dùng collectionName
+        await addDoc(collection(db, collectionName), {
           ...songFormContent,
-          postedBy: isHDCGMode ? "HDCG Admin" : "Khang Ma Poh", // Có thể đổi tên người đăng nếu muốn
+          postedBy: isHDCGMode ? "HDCG Admin" : "Khang Ma Poh",
           createdAt: new Date().getTime(),
           updatedAt: new Date().toLocaleDateString('vi-VN')
         });
       } 
-
-      await fetchSongs(); // Tải lại danh sách mới nhất
-      setIsEditing(false); // Đóng form editor
-      setEditingData(null); // Reset trạng thái sửa
-      setSelectedSong(null); // Quay về trang chủ
-    } catch (e) {
-      console.error("Lỗi khi lưu dữ liệu: ", e);
-      alert("Có lỗi xảy ra khi lưu bài hát!");
-    }
+      await fetchSongs();
+      setIsEditing(false); setEditingData(null); setSelectedSong(null);
+    } catch (e) { console.error(e); alert("Có lỗi xảy ra!"); }
   };
 
-  // 3. Hàm kích hoạt chế độ chỉnh sửa
-  const startEditing = (song) => {
-    setEditingData(song);
-    setIsEditing(true);
-  };
+  const startEditing = (song) => { setEditingData(song); setIsEditing(true); };
 
-  // 4. Hàm xóa bài hát
   const handleDelete = async (songId) => {
     const confirmDelete = window.confirm("Xóa vĩnh viễn bài hát này?");
     if (!confirmDelete) return;
-
-    // Xác định collection
     const collectionName = isHDCGMode ? "hdcg_songs" : "songs";
-
     try {
-      const songRef = doc(db, collectionName, songId); // <--- Dùng collectionName
-      await deleteDoc(songRef);
-      // ... (giữ nguyên đoạn dưới)
+      await deleteDoc(doc(db, collectionName, songId));
       alert("Đã xóa bài hát thành công!");
       await fetchSongs();
       setSelectedSong(null);
-    } catch (e) {
-      console.error("Lỗi khi xóa: ", e);
-      alert("Không thể xóa bài hát!");
-    }
+    } catch (e) { console.error(e); alert("Không thể xóa!"); }
   };
   
-  // 5. Hàm chuyển đổi chế độ HDCG  
   const toggleHDCGMode = () => {
     if (isHDCGMode) {
-      // Khi thoát ra -> Xóa phiên đăng nhập
       setIsHDCGMode(false);
-      sessionStorage.removeItem("HDCG_SESSION"); // <--- Thêm dòng này
+      sessionStorage.removeItem("HDCG_SESSION");
       window.history.pushState(null, "", "/");
       alert("Đã đăng xuất khỏi HDCG.");
       return;
     }
-
     const input = prompt("Nhập mật khẩu truy cập HDCG:");
     if (input === hdcgSystemPassword) {
       setIsHDCGMode(true);
-      sessionStorage.setItem("HDCG_SESSION", "true"); // <--- Thêm dòng này: Lưu lại là đã vào rồi
+      sessionStorage.setItem("HDCG_SESSION", "true");
       window.history.pushState(null, "", "/hdcg");
       alert("Truy cập thành công!");
     } else if (input !== null) {
@@ -217,125 +228,118 @@ function App() {
     }
   };
 
-  // Nếu đang ở chế độ Tone Finder thì hiển thị nó thay vì App chính
-  if (isToneFinder) {
-    return <ToneFinder onBack={() => {
-      setIsToneFinder(false);
-      window.history.pushState(null, "", "/"); // Quay về trang chủ
-    }} />;
-  }
+  // Hàm helper để reset về trạng thái xem list ban đầu
+  const resetView = () => {
+    setSelectedSong(null); 
+    setIsEditing(false); 
+    setEditingData(null);
+    window.history.pushState(null, "", "/");
+  };
 
+  // --- RENDER GIAO DIỆN ---
   return (
-  
-  
-  <LoginGuard>
-  <div className="container">
-    {/* Nội dung App hiện tại của bạn nằm hết ở đây */}
-    <div className="container">
-      <header>
-        {/* Thay thế h1 bằng một thẻ div hoặc span chứa ảnh logo */}
-
-      <div className="header-controls"> {/* Nên bọc 2 nút này vào 1 div để dễ căn chỉnh */}
-    
-        <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-          {theme === 'light' ? '🌙 Tối' : '☀️ Sáng'}
-        </button>
-
-        {/* NÚT HDCG LOGO MỚI */}
-        <div 
-          className={`hdcg-btn ${isHDCGMode ? 'active' : ''}`} 
-          onClick={toggleHDCGMode}
-          title={isHDCGMode ? "Quay về trang chủ" : "Truy cập HDCG"}
-        >
-          <img src={hdcgLogo} alt="HDCG Access" />
-        </div>
-
-        {/* Nút Tone Finder (Thêm vào dưới nút HDCG) */}
-        <div 
-          className="tone-btn"
-          onClick={() => {
-            setIsToneFinder(true);
-            window.history.pushState(null, "", "/tonefinder");
+    <LoginGuard>
+      <div className="app-layout">
+        {/* THANH MENU TRÁI */}
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={(tab) => {
+             setActiveTab(tab);
+             if(tab === 'tone') window.history.pushState(null, "", "/tonefinder");
           }}
-          title="Dò Tone Nhạc"
-        >
-          🎵
-        </div>
-
-      </div>
-      
-        <div 
-          className="logo-container"
-          onClick={() => { setSelectedSong(null); setIsEditing(false); setEditingData(null); }} 
-          style={{ cursor: 'pointer' }}
-        >
-          <img src={myLogo} alt="Khang Ma Poh Logo" className="app-logo" />
-        </div>
-        
-        {!isEditing && !selectedSong && (
-          <button className="btn-create" onClick={() => setIsEditing(true)}>
-            + Tạo bài hát
-          </button>
-        )}
-      </header>
-     {/* Nếu không ở chế độ sửa bài và không đang xem chi tiết bài hát */}
-    {!isEditing && !selectedSong && (
-      <div className="main-home">
-        {/* THANH TÌM KIẾM */}
-        <div className="search-bar" style={{ marginBottom: '20px' }}>
-          <input 
-            type="text" 
-            placeholder="Tìm theo tên bài hát hoặc tác giả..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: '93%', padding: '12px', borderRadius: '8px', border: '1px solid #edededff' }}
-          />
-        </div>
-
-        {/* DANH SÁCH BÀI HÁT (CHỈ DÙNG 1 CÁI NÀY THÔI) */}
-        <div className="song-list">
-          {filteredSongs.length > 0 ? (
-            filteredSongs.map(song => (
-              <div key={song.id} className="song-item" onClick={() => setSelectedSong(song)}>
-                <h3>{song.title} - <span className="author-name">{song.author}</span></h3>
-                <p className="song-meta">Đăng bởi: {song.author} • Cập nhật: {song.updatedAt}</p>
-              </div>
-            ))
-          ) : (
-            <div className="no-result">Không tìm thấy bài hát nào phù hợp...</div>
-          )}
-        </div>
-      </div>
-    )}
-      
-      <hr />
-
-      {/* Logic hiển thị các trang */}
-      {isEditing ? (
-        <SongEditor 
-          onSave={handleSave} 
-          onCancel={() => { setIsEditing(false); setEditingData(null); }} 
-          initialData={editingData} // Truyền dữ liệu cũ vào để Editor hiển thị lại
+          theme={theme}
+          setTheme={setTheme}
+          isHDCGMode={isHDCGMode}
+          toggleHDCGMode={toggleHDCGMode}
+          resetView={resetView}
         />
-      ) : selectedSong ? (
-        <SongDetail 
-          song={selectedSong} 
-          onBack={() => setSelectedSong(null)} 
-          onEdit={startEditing} // Truyền hàm này vào để trong trang chi tiết bấm được nút Sửa
-          onDelete={handleDelete}
-          // 2. TRUYỀN DỮ LIỆU XUỐNG ĐÂY
-          chordColor={chordColor} 
-          setChordColor={setChordColor}
-        />
-      ) : (
-        <div className="song-list">
-          {songs.length === 0 && <p>Chưa có bài hát nào. Hãy tạo bài mới!</p>}
-          
+
+        {/* NỘI DUNG CHÍNH (BÊN PHẢI) */}
+        <div className="main-wrapper">
+          <div className="container">
+            
+            {/* 1. NẾU LÀ TAB TONE FINDER */}
+            {activeTab === 'tone' ? (
+              <ToneFinder onBack={() => {
+                setActiveTab('home');
+                window.history.pushState(null, "", "/");
+              }} />
+            ) : (
+              // 2. NẾU LÀ TAB HOME (LOGIC CŨ CỦA BẠN)
+              <>
+                <header>
+                   {/* Tiêu đề thay đổi tùy theo chế độ */}
+                   <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                      <h1 style={{margin: 0}}>
+                        {isHDCGMode ? "HDCG WORSHIP 🕊️" : "KHANG MA POH 🎸"}
+                      </h1>
+                      {/* Có thể thêm badge nếu cần */}
+                      {isHDCGMode && <span style={{background: 'green', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem'}}>Private Mode</span>}
+                   </div>
+
+                   {/* Nút tạo bài hát */}
+                   {!isEditing && !selectedSong && (
+                    <button className="btn-create" onClick={() => setIsEditing(true)}>
+                      + Tạo bài hát
+                    </button>
+                  )}
+                </header>
+
+                {!isEditing && !selectedSong && (
+                  <div className="main-home">
+                    <div className="search-bar" style={{ marginBottom: '20px' }}>
+                      <input 
+                        type="text" 
+                        placeholder="Tìm theo tên bài hát hoặc tác giả..." 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ width: '100%', padding: '15px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div className="song-list">
+                      {filteredSongs.length > 0 ? (
+                        filteredSongs.map(song => (
+                          <div key={song.id} className="song-item" onClick={() => setSelectedSong(song)}>
+                            <h3>{song.title}</h3>
+                            <p className="song-meta" style={{marginTop: 'auto'}}>
+                               <span className="author-name">👤 {song.author}</span>
+                               <br/>
+                               <small style={{opacity: 0.7}}>📅 {song.updatedAt}</small>
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="no-result">Không tìm thấy bài hát nào phù hợp...</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Các màn hình con: Sửa / Chi tiết */}
+                {isEditing ? (
+                  <SongEditor 
+                    onSave={handleSave} 
+                    onCancel={() => { setIsEditing(false); setEditingData(null); }} 
+                    initialData={editingData} 
+                  />
+                ) : selectedSong ? (
+                  <SongDetail 
+                    song={selectedSong} 
+                    onBack={() => setSelectedSong(null)} 
+                    onEdit={startEditing} 
+                    onDelete={handleDelete}
+                    chordColor={chordColor} 
+                    setChordColor={setChordColor}
+                  />
+                ) : null}
+              </>
+            )}
+
+          </div>
         </div>
-      )}
-    </div>
-  </div>
-  </LoginGuard>
+      </div>
+    </LoginGuard>
   );
 }
 
