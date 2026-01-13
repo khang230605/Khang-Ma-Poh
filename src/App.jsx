@@ -270,11 +270,35 @@ function App() {
                 <header>
                    {/* Tiêu đề thay đổi tùy theo chế độ */}
                    <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-                      <h1 style={{margin: 0}}>
-                        {isHDCGMode ? "HDCG WORSHIP 🕊️" : "KHANG MA POH 🎸"}
-                      </h1>
-                      {/* Có thể thêm badge nếu cần */}
-                      {isHDCGMode && <span style={{background: 'green', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem'}}>Private Mode</span>}
+                      <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                        {/* Hiển thị Logo thay vì chữ Text */}
+                        <img 
+                          src={isHDCGMode ? hdcgLogo : myLogo} 
+                          alt="Header Logo" 
+                          style={{
+                            height: '60px',       /* Chiều cao cố định cho gọn */
+                            width: 'auto',        /* Chiều rộng tự động theo tỉ lệ */
+                            objectFit: 'contain', /* Đảm bảo ảnh không bị méo */
+                            display: 'block'
+                          }}
+                        />
+                        
+                        {/* Badge Private Mode giữ nguyên (nếu muốn) */}
+                        {isHDCGMode && (
+                          <span style={{
+                            background: '#28a745', 
+                            color: 'white', 
+                            padding: '4px 10px', 
+                            borderRadius: '20px', 
+                            fontSize: '0.75rem', 
+                            fontWeight: 'bold',
+                            letterSpacing: '1px',
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                          }}>
+                            PRIVATE MODE
+                          </span>
+                        )}
+                      </div>
                    </div>
 
                    {/* Nút tạo bài hát */}
