@@ -186,26 +186,59 @@ function App() {
 
   useEffect(() => { fetchSongs(); }, [isHDCGMode]);
 
-  const handleSave = async (songFormContent) => {
+const handleSave = async (songFormContent) => {
     const collectionName = isHDCGMode ? "hdcg_songs" : "songs";
+    
+    // Biến để lưu thông tin bài hát sau khi xử lý xong
+    let savedSongData = null;
+
     try {
       if (editingData) {
+        // --- TRƯỜNG HỢP 1: SỬA BÀI CŨ ---
         const songRef = doc(db, collectionName, editingData.id);
-        await updateDoc(songRef, { ...songFormContent, updatedAt: new Date().toLocaleDateString('vi-VN') });
+        
+        // Dữ liệu update
+        const updatePayload = {
+          ...songFormContent,
+          updatedAt: new Date().toLocaleDateString('vi-VN')
+        };
+
+        await updateDoc(songRef, updatePayload);
+        
+        // Tạo object hoàn chỉnh để hiển thị ngay lập tức (giữ nguyên ID cũ)
+        savedSongData = { id: editingData.id, ...updatePayload };
+
       } else {
-        await addDoc(collection(db, collectionName), {
+        // --- TRƯỜNG HỢP 2: TẠO BÀI MỚI ---
+        const newPayload = {
           ...songFormContent,
           postedBy: isHDCGMode ? "HDCG Admin" : "Khang Ma Poh",
           createdAt: new Date().getTime(),
           updatedAt: new Date().toLocaleDateString('vi-VN')
-        });
+        };
+
+        // Khi addDoc, nó trả về một reference chứa ID mới tạo
+        const docRef = await addDoc(collection(db, collectionName), newPayload);
+        
+        // Tạo object hoàn chỉnh (Lấy ID mới từ docRef)
+        savedSongData = { id: docRef.id, ...newPayload };
       } 
-      await fetchSongs();
-      setIsEditing(false); setEditingData(null); setSelectedSong(null);
-    } catch (e) { console.error(e); alert("Có lỗi xảy ra!"); }
+
+      // Cập nhật lại danh sách ngầm bên dưới
+      await fetchSongs(); 
+
+      // --- QUAN TRỌNG: CHUYỂN HƯỚNG ---
+      setIsEditing(false);      // Tắt chế độ sửa
+      setEditingData(null);     // Xóa dữ liệu tạm
+      setSelectedSong(savedSongData); // <--- HIỂN THỊ NGAY BÀI VỪA LƯU
+
+    } catch (e) {
+      console.error("Lỗi khi lưu dữ liệu: ", e);
+      alert("Có lỗi xảy ra khi lưu bài hát!");
+    }
   };
 
-  const startEditing = (song) => { setEditingData(song); setIsEditing(true); };
+  const startEditing = (song) => { setSelectedSong(null); setEditingData(song); setIsEditing(true); };
 
   const handleDelete = async (songId) => {
     const confirmDelete = window.confirm("Xóa vĩnh viễn bài hát này?");
