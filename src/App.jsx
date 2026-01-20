@@ -19,6 +19,7 @@ import { getYouTubeEmbedUrl } from './youtubeLink';
 import ToneFinder from './ToneFinder';
 import ChordViewer from './ChordViewer';
 import SetlistManager from './SetlistManager';
+import AutoScroll from './components/AutoScroll';
 
 
 // --- COMPONENT SIDEBAR MỚI ---
@@ -602,6 +603,9 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
       <div className="song-content" style={{ fontSize: `${fontSize}rem`, lineHeight: `${fontSize * 2.5}` }}>
         {renderContent(song.content)}
       </div>
+
+      {/* Nút AutoScroll */}
+      <AutoScroll />
 
       {/* Hiển thị popup hợp âm nếu có */}
       {selectedChord && (
