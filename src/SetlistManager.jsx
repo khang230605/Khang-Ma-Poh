@@ -4,7 +4,7 @@ import {
   collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy 
 } from "firebase/firestore";
 
-const SetlistManager = ({ isHDCGMode, allSongs, onSelectSong }) => {
+const SetlistManager = ({ currentUser, allSongs, onSelectSong }) => {
   const [setlists, setSetlists] = useState([]);
   const [currentSetlist, setCurrentSetlist] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -12,43 +12,77 @@ const SetlistManager = ({ isHDCGMode, allSongs, onSelectSong }) => {
   const [searchSongTerm, setSearchSongTerm] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
 
-  // State mới: Theo dõi xem có thay đổi chưa được lưu không
+  // State theo dõi thay đổi chưa lưu
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  const collectionName = isHDCGMode ? "hdcg_setlists" : "setlists";
-
-  useEffect(() => { fetchSetlists(); }, [isHDCGMode]);
+  // Load danh sách dựa trên quyền hạn của User
+  useEffect(() => { 
+    fetchSetlists(); 
+  }, [currentUser]);
 
   const fetchSetlists = async () => {
+    if (!currentUser) return;
+    setSetlists([]);
+    let mergedLists = [];
+
     try {
-      const q = query(collection(db, collectionName), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setSetlists(data);
+      // 1. Luôn lấy Setlist Public (setlists)
+      const publicQ = query(collection(db, "setlists"), orderBy("createdAt", "desc"));
+      const publicSnap = await getDocs(publicQ);
+      const publicData = publicSnap.docs.map(doc => ({ 
+        id: doc.id, ...doc.data(), _source: 'setlists' 
+      }));
+      mergedLists = [...publicData];
+
+      // 2. Nếu là HDCG Member hoặc Admin -> Lấy thêm Setlist HDCG
+      if (currentUser.role === 'hdcg_member' || currentUser.role === 'admin') {
+        const hdcgQ = query(collection(db, "hdcg_setlists"), orderBy("createdAt", "desc"));
+        const hdcgSnap = await getDocs(hdcgQ);
+        const hdcgData = hdcgSnap.docs.map(doc => ({ 
+          id: doc.id, ...doc.data(), _source: 'hdcg_setlists' 
+        }));
+        
+        mergedLists = [...mergedLists, ...hdcgData];
+      }
+
+      // 3. Sắp xếp lại tổng thể theo thời gian mới nhất
+      mergedLists.sort((a, b) => b.createdAt - a.createdAt);
+      setSetlists(mergedLists);
+
     } catch (e) { console.error("Lỗi lấy setlist:", e); }
   };
 
   const handleCreateSetlist = async () => {
     if (!newTitle.trim()) return;
+    
+    // Quyết định nơi lưu Setlist mới dựa trên Role
+    const targetCollection = (currentUser.role === 'hdcg_member' || currentUser.role === 'admin') 
+                              ? "hdcg_setlists" 
+                              : "setlists";
+
     try {
-      await addDoc(collection(db, collectionName), {
+      await addDoc(collection(db, targetCollection), {
         title: newTitle, createdAt: new Date().getTime(), songs: [] 
       });
       setNewTitle(""); setIsCreating(false); fetchSetlists();
     } catch (e) { alert("Lỗi tạo setlist"); }
   };
 
-  const handleDeleteSetlist = async (id, e) => {
+  const handleDeleteSetlist = async (list, e) => {
     e.stopPropagation();
     if (!window.confirm("Xóa danh sách này?")) return;
+    
+    // Xóa đúng collection nguồn dựa vào _source
+    const targetCollection = list._source || "setlists";
+
     try {
-      await deleteDoc(doc(db, collectionName, id));
+      await deleteDoc(doc(db, targetCollection, list.id));
       fetchSetlists();
-      if (currentSetlist?.id === id) setCurrentSetlist(null);
+      if (currentSetlist?.id === list.id) setCurrentSetlist(null);
     } catch (e) { alert("Lỗi xóa"); }
   };
 
-  // --- LOGIC MỚI: CHỈ SỬA LOCAL STATE, CHƯA GỌI FIREBASE ---
+  // --- CÁC HÀM THAO TÁC LOCAL (CHƯA GỌI FIREBASE) ---
 
   const addSongToSetlist = (song) => {
     if (!currentSetlist) return;
@@ -56,12 +90,9 @@ const SetlistManager = ({ isHDCGMode, allSongs, onSelectSong }) => {
       id: song.id, title: song.title, author: song.author, key: song.key || 'C'
     }];
     
-    // Cập nhật giao diện ngay lập tức
     setCurrentSetlist({ ...currentSetlist, songs: updatedSongs });
     setSearchSongTerm(""); 
     setShowSearchResults(false);
-    
-    // Đánh dấu là chưa lưu
     setHasUnsavedChanges(true);
   };
 
@@ -89,23 +120,28 @@ const SetlistManager = ({ isHDCGMode, allSongs, onSelectSong }) => {
     setHasUnsavedChanges(true);
   };
 
-  // --- HÀM LƯU THAY ĐỔI LÊN FIREBASE (KHI BẤM NÚT) ---
+  // --- HÀM LƯU THAY ĐỔI LÊN FIREBASE ---
   const saveChanges = async () => {
     if (!currentSetlist) return;
+    
+    // Xác định collection cần update dựa vào _source đã đánh dấu lúc fetch
+    // Nếu tạo mới chưa có _source thì fallback về logic role (tương tự lúc tạo)
+    const targetCollection = currentSetlist._source || 
+                             ((currentUser.role === 'hdcg_member' || currentUser.role === 'admin') ? "hdcg_setlists" : "setlists");
+
     try {
-      const setlistRef = doc(db, collectionName, currentSetlist.id);
+      const setlistRef = doc(db, targetCollection, currentSetlist.id);
       await updateDoc(setlistRef, { songs: currentSetlist.songs });
       
-      setHasUnsavedChanges(false); // Đã lưu xong
+      setHasUnsavedChanges(false);
       alert("Đã lưu danh sách thành công! ✅");
-      fetchSetlists(); // Cập nhật lại list tổng bên ngoài
+      fetchSetlists(); // Refresh lại data bên ngoài để đảm bảo đồng bộ
     } catch (e) {
       console.error(e);
       alert("Lỗi khi lưu dữ liệu!");
     }
   };
 
-  // Hàm xử lý quay lại: Nhắc nhở nếu quên lưu
   const handleBack = () => {
     if (hasUnsavedChanges) {
       if (!window.confirm("Bạn có thay đổi chưa lưu! Bạn có chắc muốn thoát không?")) return;
@@ -145,8 +181,15 @@ const SetlistManager = ({ isHDCGMode, allSongs, onSelectSong }) => {
             {setlists.map(list => (
               <div key={list.id} className="setlist-card" onClick={() => setCurrentSetlist(list)}>
                 <div className="card-top">
-                  <h3>{list.title}</h3>
-                  <button className="btn-delete-icon" onClick={(e) => handleDeleteSetlist(list.id, e)}>×</button>
+                  <h3>
+                    {list.title}
+                    {/* Badge hiển thị nguồn nếu là admin/hdcg */}
+                    {list._source === 'hdcg_setlists' && (
+                       <span style={{fontSize:'0.6rem', background:'green', color:'white', padding:'2px 5px', borderRadius:'4px', marginLeft:'5px', verticalAlign:'middle'}}>PRIVATE</span>
+                    )}
+                  </h3>
+                  {/* Truyền cả object list để xóa đúng nguồn */}
+                  <button className="btn-delete-icon" onClick={(e) => handleDeleteSetlist(list, e)}>×</button>
                 </div>
                 <p>{list.songs?.length || 0} bài hát</p>
                 <small>{new Date(list.createdAt).toLocaleDateString('vi-VN')}</small>
@@ -162,11 +205,10 @@ const SetlistManager = ({ isHDCGMode, allSongs, onSelectSong }) => {
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
              <h1 style={{color: 'var(--primary-color)', margin: 0}}>{currentSetlist.title}</h1>
              
-             {/* --- NÚT LƯU THAY ĐỔI (Chỉ hiện khi có thay đổi) --- */}
              <button 
                 className={`btn-save-changes ${hasUnsavedChanges ? 'unsaved' : ''}`}
                 onClick={saveChanges}
-                disabled={!hasUnsavedChanges} // Không có gì thay đổi thì không bấm được
+                disabled={!hasUnsavedChanges}
              >
                 {hasUnsavedChanges ? "💾 Lưu thay đổi *" : "✅ Đã đồng bộ"}
              </button>
@@ -242,8 +284,8 @@ const SetlistManager = ({ isHDCGMode, allSongs, onSelectSong }) => {
         .btn-move { background: #f0f0f0; border: none; color: #666; font-size: 0.6rem; cursor: pointer; width: 24px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; padding: 0; }
         .btn-move:hover:not(:disabled) { background: var(--primary-color); color: white; }
         .btn-move:disabled { opacity: 0; cursor: default; }
-
-        /* Nút Lưu Mới */
+        
+        /* Button Save Changes */
         .btn-save-changes {
            padding: 8px 16px; border-radius: 20px; border: 1px solid #ddd;
            background: #f8f9fa; color: #666; font-weight: bold; cursor: default;

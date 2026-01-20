@@ -1,19 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react'; // <--- Thêm useRef vào đây
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
-// --- PHẦN IMPORT ẢNH (Chỉ khai báo 1 lần duy nhất) ---
+// --- IMPORT ---
 import myLogo from './assets/logonoback.png'; 
-import hdcgLogo from './assets/hdcglogo.jpg'; // (Hoặc .jpg tùy file bạn lưu)
-
-// --- PHẦN IMPORT FIREBASE ---
+import hdcgLogo from './assets/hdcglogo.jpg';
 import { db } from './firebase';
-import { 
-  collection, addDoc, getDocs, query, orderBy, 
-  doc, updateDoc, deleteDoc, getDoc 
-} from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
 
-// --- CÁC COMPONENT KHÁC ---
-import LoginGuard from './LoginGuard';
+// --- COMPONENTS ---
+import UserAuth from './components/UserAuth';
+import AdminDashboard from './admin/AdminDashboard'; // <--- MỚI: IMPORT ADMIN
 import { transposeChord } from './chordLogic';
 import { getYouTubeEmbedUrl } from './youtubeLink';
 import ToneFinder from './ToneFinder';
@@ -21,453 +17,306 @@ import ChordViewer from './ChordViewer';
 import SetlistManager from './SetlistManager';
 import AutoScroll from './components/AutoScroll';
 
-
-// --- COMPONENT SIDEBAR MỚI ---
-const Sidebar = ({ 
-  activeTab, 
-  setActiveTab, 
-  theme, 
-  setTheme, 
-  isHDCGMode, 
-  toggleHDCGMode,
-  resetView // Hàm để quay về trang chủ sạch sẽ
-}) => {
+// --- SIDEBAR CẬP NHẬT ---
+const Sidebar = ({ activeTab, setActiveTab, theme, setTheme, currentUser, onLogout, resetView }) => {
   return (
     <div className="sidebar">
-      {/* Logo chính (Click để về trang chủ) */}
       <img 
-        src={myLogo} 
-        alt="Logo" 
-        className="sidebar-logo" 
+        src={myLogo} alt="Logo" className="sidebar-logo" 
         onClick={() => { setActiveTab('home'); resetView(); }}
       />
-
-      {/* 1. Nút Trang chủ */}
-      <div 
-        className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
-        onClick={() => { setActiveTab('home'); resetView(); }}
-      >
-        <div className="nav-icon">🏠</div>
-        <span className="nav-text">Trang chủ</span>
+      <div className={`nav-item ${activeTab === 'home' ? 'active' : ''}`} onClick={() => { setActiveTab('home'); resetView(); }}>
+        <div className="nav-icon">🏠</div><span className="nav-text">Trang chủ</span>
+      </div>
+      <div className={`nav-item ${activeTab === 'tone' ? 'active' : ''}`} onClick={() => setActiveTab('tone')}>
+        <div className="nav-icon">🎵</div><span className="nav-text">Dò Tone</span>
+      </div>
+      <div className={`nav-item ${activeTab === 'setlist' ? 'active' : ''}`} onClick={() => setActiveTab('setlist')}>
+        <div className="nav-icon">📋</div><span className="nav-text">Danh sách</span>
       </div>
 
-      {/* 2. Nút Tone Finder */}
-      <div 
-        className={`nav-item ${activeTab === 'tone' ? 'active' : ''}`}
-        onClick={() => setActiveTab('tone')}
-      >
-        <div className="nav-icon">🎵</div>
-        <span className="nav-text">Dò Tone</span>
-      </div>
-
-      {/* 3. Nút Setlist Manager */}
-      <div 
-        className={`nav-item ${activeTab === 'setlist' ? 'active' : ''}`}
-        onClick={() => setActiveTab('setlist')}
-      >
-        <div className="nav-icon">📋</div>
-        <span className="nav-text">Danh sách</span>
-      </div>
-
-      {/* 3. Nút HDCG (Dùng ảnh logo) */}
-      <div 
-        className={`nav-item ${isHDCGMode ? 'active' : ''}`}
-        onClick={toggleHDCGMode}
-      >
-        <div className="nav-icon">
-          <div className="sidebar-img-btn">
-             <img src={hdcgLogo} alt="HDCG" />
-          </div>
+      {/* --- MỚI: NÚT ADMIN (CHỈ HIỆN VỚI ROLE ADMIN) --- */}
+      {currentUser?.role === 'admin' && (
+        <div className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`} onClick={() => setActiveTab('admin')}>
+          <div className="nav-icon">⚙️</div><span className="nav-text">Quản trị</span>
         </div>
-        <span className="nav-text">{isHDCGMode ? 'Thoát HDCG' : 'Vào HDCG'}</span>
+      )}
+      
+      <div className="nav-item" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} style={{ marginTop: 'auto' }}>
+        <div className="nav-icon">{theme === 'light' ? '🌙' : '☀️'}</div>
+        <span className="nav-text">Giao diện</span>
       </div>
 
-      {/* 4. Nút Sáng/Tối (Thêm vào menu luôn cho tiện) */}
-      <div 
-        className="nav-item"
-        onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-        style={{ marginTop: 'auto', marginBottom: '20px' }} // Đẩy xuống dưới cùng trên PC
-      >
-        <div className="nav-icon">{theme === 'light' ? '🌙' : '☀️'}</div>
-        <span className="nav-text">{theme === 'light' ? 'Chế độ Tối' : 'Chế độ Sáng'}</span>
+      <div className="nav-item" onClick={onLogout} style={{ marginBottom: '20px', borderTop: '1px solid #eee' }}>
+        <div className="nav-icon">🚪</div>
+        <span className="nav-text">Đăng xuất ({currentUser?.name})</span>
       </div>
     </div>
   );
 };
 
-// Các màu hợp âm gợi ý
 const colorOptions = ['#d71920', '#0056b3', '#28a745', '#6f42c1', '#fd7e14'];
 
 function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
+  // Data State
   const [songs, setSongs] = useState([]);
   const [selectedSong, setSelectedSong] = useState(null);
   const [searchTerm, setSearchTerm] = useState(""); 
   const [isEditing, setIsEditing] = useState(false);
   const [editingData, setEditingData] = useState(null);
   
-  // Theme & Color
+  // UI State
   const [theme, setTheme] = useState('light');
   const [chordColor, setChordColor] = useState('#d71920');
-  
+  const [activeTab, setActiveTab] = useState('home');
+
+  // --- AUTH LOGIC (GIỮ NGUYÊN) ---
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user_session');
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+    }
+    setLoadingAuth(false);
+  }, []);
+
+  const handleLoginSuccess = (userData) => {
+    setCurrentUser(userData);
+    localStorage.setItem('user_session', JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    if(window.confirm("Bạn muốn đăng xuất?")) {
+      setCurrentUser(null);
+      localStorage.removeItem('user_session');
+      window.history.pushState(null, "", "/");
+      setActiveTab('home'); // Reset tab khi logout
+    }
+  };
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.style.setProperty('--chord-color', chordColor);
   }, [theme, chordColor]);
 
-  // HDCG Mode
-  const [isHDCGMode, setIsHDCGMode] = useState(false);
-  const [hdcgSystemPassword, setHdcgSystemPassword] = useState("");
-
-  // Quản lý Tab hiển thị (home | tone)
-  // Thay thế logic isToneFinder cũ bằng biến activeTab cho dễ mở rộng
-  const [activeTab, setActiveTab] = useState('home');
-
-  // URL checking (Giữ nguyên logic cũ nhưng cập nhật state activeTab)
   useEffect(() => {
-    if (window.location.pathname === '/tonefinder') {
-      setActiveTab('tone');
-    } else if (window.location.pathname === '/hdcg') {
-       // Logic cũ xử lý ở dưới
-    }
+    if (window.location.pathname === '/tonefinder') setActiveTab('tone');
   }, []);
 
-  const hasCheckedInit = useRef(false);
-
-  useEffect(() => {
-    if (hasCheckedInit.current) return;
-    hasCheckedInit.current = true;
-
-    const initApp = async () => {
-      let fetchedPass = "";
-      try {
-        const docRef = doc(db, "Settings", "hdcg_config");
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          fetchedPass = docSnap.data().ACCESS_PASSWORD;
-          setHdcgSystemPassword(fetchedPass);
-        }
-      } catch (e) { console.error(e); }
-
-      const isSessionActive = sessionStorage.getItem("HDCG_SESSION") === "true";
-      if (isSessionActive) {
-        setIsHDCGMode(true);
-        if (window.location.pathname !== '/hdcg' && window.location.pathname !== '/tonefinder') {
-           window.history.pushState(null, "", "/hdcg");
-        }
-      } else if (window.location.pathname === '/hdcg') {
-        setTimeout(() => {
-          const input = prompt("🔒 Đây là khu vực riêng tư. Nhập mật khẩu để tiếp tục:");
-          if (input === fetchedPass && fetchedPass !== "") {
-            setIsHDCGMode(true);
-            sessionStorage.setItem("HDCG_SESSION", "true");
-            alert("Đã xác minh danh tính! Chào mừng trở lại.");
-          } else {
-            alert("Mật khẩu sai! Đang quay về sảnh chính.");
-            setIsHDCGMode(false);
-            window.history.pushState(null, "", "/");
-          }
-        }, 100);
-      }
-    };
-    initApp();
-  }, []);
-
+  // --- FETCH SONGS (GIỮ NGUYÊN) ---
   const filteredSongs = songs.filter(song => 
     song.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
     song.author.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
   const fetchSongs = async () => {
-    const collectionName = isHDCGMode ? "hdcg_songs" : "songs"; 
-    const q = query(collection(db, collectionName), orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
-    const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setSongs(data);
+    if (!currentUser) return;
+    setSongs([]); 
+    let mergedSongs = [];
+    try {
+      const publicQ = query(collection(db, "songs"), orderBy("createdAt", "desc"));
+      const publicSnap = await getDocs(publicQ);
+      const publicData = publicSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), _source: 'songs' }));
+      mergedSongs = [...publicData];
+
+      if (currentUser.role === 'hdcg_member' || currentUser.role === 'admin') {
+        const hdcgQ = query(collection(db, "hdcg_songs"), orderBy("createdAt", "desc"));
+        const hdcgSnap = await getDocs(hdcgQ);
+        const hdcgData = hdcgSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), _source: 'hdcg_songs' }));
+        mergedSongs = [...mergedSongs, ...hdcgData];
+      }
+      mergedSongs.sort((a, b) => b.createdAt - a.createdAt);
+      setSongs(mergedSongs);
+    } catch (e) { console.error(e); }
   };
 
-  useEffect(() => { fetchSongs(); }, [isHDCGMode]);
+  useEffect(() => { if (currentUser) fetchSongs(); }, [currentUser]);
 
-const handleSave = async (songFormContent) => {
-    const collectionName = isHDCGMode ? "hdcg_songs" : "songs";
-    
-    // Biến để lưu thông tin bài hát sau khi xử lý xong
+  // --- HANDLE SAVE (GIỮ NGUYÊN) ---
+  const handleSave = async (songFormContent, targetCollection) => {
+    const defaultCollection = (currentUser.role === 'hdcg_member' || currentUser.role === 'admin') ? "hdcg_songs" : "songs";
     let savedSongData = null;
-
     try {
       if (editingData) {
-        // --- TRƯỜNG HỢP 1: SỬA BÀI CŨ ---
+        const collectionName = editingData._source || defaultCollection;
         const songRef = doc(db, collectionName, editingData.id);
-        
-        // Dữ liệu update
-        const updatePayload = {
-          ...songFormContent,
-          updatedAt: new Date().toLocaleDateString('vi-VN')
-        };
-
+        const updatePayload = { ...songFormContent, updatedAt: new Date().toLocaleDateString('vi-VN') };
         await updateDoc(songRef, updatePayload);
-        
-        // Tạo object hoàn chỉnh để hiển thị ngay lập tức (giữ nguyên ID cũ)
-        savedSongData = { id: editingData.id, ...updatePayload };
-
+        savedSongData = { id: editingData.id, ...updatePayload, _source: collectionName };
       } else {
-        // --- TRƯỜNG HỢP 2: TẠO BÀI MỚI ---
-        const newPayload = {
-          ...songFormContent,
-          postedBy: isHDCGMode ? "HDCG Admin" : "Khang Ma Poh",
-          createdAt: new Date().getTime(),
-          updatedAt: new Date().toLocaleDateString('vi-VN')
-        };
-
-        // Khi addDoc, nó trả về một reference chứa ID mới tạo
+        const collectionName = targetCollection; 
+        const newPayload = { ...songFormContent, postedBy: currentUser.name, createdAt: new Date().getTime(), updatedAt: new Date().toLocaleDateString('vi-VN') };
         const docRef = await addDoc(collection(db, collectionName), newPayload);
-        
-        // Tạo object hoàn chỉnh (Lấy ID mới từ docRef)
-        savedSongData = { id: docRef.id, ...newPayload };
+        savedSongData = { id: docRef.id, ...newPayload, _source: collectionName };
       } 
-
-      // Cập nhật lại danh sách ngầm bên dưới
       await fetchSongs(); 
-
-      // --- QUAN TRỌNG: CHUYỂN HƯỚNG ---
-      setIsEditing(false);      // Tắt chế độ sửa
-      setEditingData(null);     // Xóa dữ liệu tạm
-      setSelectedSong(savedSongData); // <--- HIỂN THỊ NGAY BÀI VỪA LƯU
-
-    } catch (e) {
-      console.error("Lỗi khi lưu dữ liệu: ", e);
-      alert("Có lỗi xảy ra khi lưu bài hát!");
-    }
+      setIsEditing(false); setEditingData(null); setSelectedSong(savedSongData); 
+    } catch (e) { console.error(e); alert("Có lỗi xảy ra!"); }
   };
 
   const startEditing = (song) => { setSelectedSong(null); setEditingData(song); setIsEditing(true); };
 
   const handleDelete = async (songId) => {
-    const confirmDelete = window.confirm("Xóa vĩnh viễn bài hát này?");
-    if (!confirmDelete) return;
-    const collectionName = isHDCGMode ? "hdcg_songs" : "songs";
+    const songToDelete = selectedSong || songs.find(s => s.id === songId);
+    if (!songToDelete) return;
+    const collectionName = songToDelete._source || "songs"; 
+    if (!window.confirm("Xóa vĩnh viễn bài hát này?")) return;
     try {
       await deleteDoc(doc(db, collectionName, songId));
-      alert("Đã xóa bài hát thành công!");
+      alert("Đã xóa bài hát!");
       await fetchSongs();
       setSelectedSong(null);
-    } catch (e) { console.error(e); alert("Không thể xóa!"); }
+    } catch (e) { console.error(e); alert("Lỗi xóa!"); }
   };
   
-  const toggleHDCGMode = () => {
-    if (isHDCGMode) {
-      setIsHDCGMode(false);
-      sessionStorage.removeItem("HDCG_SESSION");
-      window.history.pushState(null, "", "/");
-      alert("Đã đăng xuất khỏi HDCG.");
-      return;
-    }
-    const input = prompt("Nhập mật khẩu truy cập HDCG:");
-    if (input === hdcgSystemPassword) {
-      setIsHDCGMode(true);
-      sessionStorage.setItem("HDCG_SESSION", "true");
-      window.history.pushState(null, "", "/hdcg");
-      alert("Truy cập thành công!");
-    } else if (input !== null) {
-      alert("Sai mật khẩu!");
-    }
-  };
-
-  // Hàm helper để reset về trạng thái xem list ban đầu
   const resetView = () => {
-    setSelectedSong(null); 
-    setIsEditing(false); 
-    setEditingData(null);
+    setSelectedSong(null); setIsEditing(false); setEditingData(null);
     window.history.pushState(null, "", "/");
   };
 
-// --- RENDER GIAO DIỆN ---
+  // --- RENDER ---
+  if (loadingAuth) return <div style={{display:'flex', justifyContent:'center', marginTop: 50}}>Đang tải...</div>;
+  if (!currentUser) return <UserAuth onLoginSuccess={handleLoginSuccess} />;
+
   return (
-    <LoginGuard>
-      <div className="app-layout">
-        
-        {/* 1. THANH MENU TRÁI */}
-        <Sidebar 
-          activeTab={activeTab} 
-          setActiveTab={(tab) => {
-             setActiveTab(tab);
-             // Nếu bấm Tone thì đổi URL, các tab khác giữ nguyên
-             if(tab === 'tone') window.history.pushState(null, "", "/tonefinder");
-          }}
-          theme={theme}
-          setTheme={setTheme}
-          isHDCGMode={isHDCGMode}
-          toggleHDCGMode={toggleHDCGMode}
-          resetView={resetView}
-        />
+    <div className="app-layout">
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={(tab) => {
+            setActiveTab(tab);
+            if(tab === 'tone') window.history.pushState(null, "", "/tonefinder");
+        }}
+        theme={theme}
+        setTheme={setTheme}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        resetView={resetView}
+      />
 
-        {/* 2. NỘI DUNG CHÍNH (BÊN PHẢI) */}
-        <div className="main-wrapper">
-          <div className="container">
-            
-            {/* --- LOGIC HIỂN THỊ THEO THỨ TỰ ƯU TIÊN --- */}
+      <div className="main-wrapper">
+        <div className="container">
+          
+          {selectedSong ? (
+              <SongDetail 
+                song={selectedSong} 
+                onBack={() => setSelectedSong(null)} 
+                onEdit={startEditing} 
+                onDelete={() => handleDelete(selectedSong.id)}
+                chordColor={chordColor} 
+                setChordColor={setChordColor}
+              />
+          ) : isEditing ? (
+              <SongEditor 
+                onSave={handleSave} 
+                onCancel={() => { setIsEditing(false); setEditingData(null); }} 
+                initialData={editingData} 
+                currentUser={currentUser}
+              />
+          ) : activeTab === 'tone' ? (
+              <ToneFinder onBack={() => { setActiveTab('home'); window.history.pushState(null, "", "/"); }} />
+          
+          /* --- MỚI: TAB ADMIN --- */
+          ) : activeTab === 'admin' && currentUser.role === 'admin' ? (
+              <AdminDashboard /> 
 
-            {/* CASE 1: ĐANG XEM CHI TIẾT BÀI HÁT (Ưu tiên cao nhất) */}
-            {selectedSong ? (
-               <SongDetail 
-                 song={selectedSong} 
-                 onBack={() => setSelectedSong(null)} 
-                 onEdit={startEditing} 
-                 onDelete={handleDelete}
-                 chordColor={chordColor} 
-                 setChordColor={setChordColor}
-               />
+          ) : activeTab === 'setlist' ? (
+              <SetlistManager 
+                currentUser={currentUser}
+                allSongs={songs}
+                onSelectSong={(songShort) => {
+                    const full = songs.find(s => s.id === songShort.id);
+                    if(full) setSelectedSong(full);
+                }}
+              />
+          ) : (
+              <>
+                {/* --- TRANG CHỦ (HOME) --- */}
+                <header>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                      <img src={hdcgLogo} alt="Logo" style={{height: '60px', width: 'auto'}} />
+                      <div>
+                        <h2 style={{margin:0, fontSize:'1.2rem'}}>Xin chào, {currentUser.name} 👋</h2>
+                        <span style={{fontSize:'0.8rem', color:'#666'}}>
+                           {currentUser.role === 'admin' ? 'Admin hệ thống' : 
+                            (currentUser.role === 'hdcg_member' ? 'Thành viên HDCG Worship' : 'Thành viên')}
+                        </span>
+                      </div>
+                  </div>
+                  {!isEditing && !selectedSong && (
+                    <button className="btn-create" onClick={() => setIsEditing(true)}>+ Tạo bài hát</button>
+                  )}
+                </header>
 
-            /* CASE 2: ĐANG SỬA HOẶC TẠO BÀI HÁT */
-            ) : isEditing ? (
-               <SongEditor 
-                 onSave={handleSave} 
-                 onCancel={() => { setIsEditing(false); setEditingData(null); }} 
-                 initialData={editingData} 
-               />
-
-            /* CASE 3: TAB DÒ TONE */
-            ) : activeTab === 'tone' ? (
-               <ToneFinder onBack={() => {
-                 setActiveTab('home');
-                 window.history.pushState(null, "", "/");
-               }} />
-
-            /* CASE 4: TAB SETLIST (DANH SÁCH NHẠC) - MỚI THÊM */
-            ) : activeTab === 'setlist' ? (
-               <SetlistManager 
-                  isHDCGMode={isHDCGMode}
-                  allSongs={songs}
-                  onSelectSong={(songShortData) => {
-                     // Logic: Khi bấm bài hát trong Setlist -> Mở SongDetail
-                     const fullSong = songs.find(s => s.id === songShortData.id);
-                     if(fullSong) setSelectedSong(fullSong);
-                     else alert("Bài hát này đã bị xóa khỏi hệ thống.");
-                  }}
-               />
-
-            /* CASE 5: TAB TRANG CHỦ (MẶC ĐỊNH) */
-            ) : (
-               <>
-                 <header>
-                    <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-                       {/* Logo thay đổi theo chế độ */}
-                       <img 
-                         src={isHDCGMode ? hdcgLogo : myLogo} 
-                         alt="Header Logo" 
-                         style={{
-                           height: '60px', width: 'auto', 
-                           objectFit: 'contain', display: 'block'
-                         }}
-                       />
-                       {/* Badge Private Mode */}
-                       {isHDCGMode && (
-                         <span style={{
-                           background: '#28a745', color: 'white', padding: '4px 10px', 
-                           borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', 
-                           letterSpacing: '1px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
-                         }}>
-                           PRIVATE MODE
-                         </span>
-                       )}
-                    </div>
-
-                    <button className="btn-create" onClick={() => setIsEditing(true)}>
-                      + Tạo bài hát
-                    </button>
-                 </header>
-
-                 <div className="main-home">
-                   <div className="search-bar" style={{ marginBottom: '20px' }}>
-                     <input 
-                       type="text" 
-                       placeholder="Tìm theo tên bài hát hoặc tác giả..." 
-                       value={searchTerm}
-                       onChange={(e) => setSearchTerm(e.target.value)}
-                       style={{ width: '100%', padding: '15px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box' }}
-                     />
-                   </div>
-
-                   <div className="song-list">
-                     {filteredSongs.length > 0 ? (
-                       filteredSongs.map(song => (
-                         <div key={song.id} className="song-item" onClick={() => setSelectedSong(song)}>
-                           <h3>{song.title}</h3>
-                           <p className="song-meta" style={{marginTop: 'auto'}}>
-                              <span className="author-name">👤 {song.author}</span>
-                              <br/>
+                <div className="main-home">
+                  <div className="search-bar" style={{ marginBottom: '20px' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Tìm bài hát..." 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      style={{ width: '100%', padding: '15px', borderRadius: '8px', border: '1px solid #ddd' }}
+                    />
+                  </div>
+                  <div className="song-list">
+                    {filteredSongs.length > 0 ? (
+                      filteredSongs.map(song => (
+                        <div key={song.id} className="song-item" onClick={() => setSelectedSong(song)}>
+                          <h3>
+                            {song.title} 
+                            {song._source === 'hdcg_songs' && (
+                               <span style={{fontSize:'0.6rem', background:'green', color:'white', padding:'2px 5px', borderRadius:'4px', marginLeft:'5px', verticalAlign:'middle'}}>PRIVATE</span>
+                            )}
+                          </h3>
+                          <p className="song-meta" style={{marginTop: 'auto'}}>
+                              <span className="author-name">👤 {song.author}</span><br/>
                               <small style={{opacity: 0.7}}>📅 {song.updatedAt}</small>
-                           </p>
-                         </div>
-                       ))
-                     ) : (
-                       <div className="no-result">Không tìm thấy bài hát nào phù hợp...</div>
-                     )}
-                   </div>
-                 </div>
-               </>
-            )}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="no-result">Không tìm thấy bài hát...</div>
+                    )}
+                  </div>
+                </div>
+              </>
+          )}
 
-          </div>
         </div>
       </div>
-    </LoginGuard>
+    </div>
   );
 }
 
+// --- SONG DETAIL & EDITOR COMPONENTS (Giữ nguyên) ---
 
 function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor }) {
   const [transpose, setTranspose] = useState(0);
-  // 1. Thêm state để quản lý cỡ chữ (mặc định là 1.2 rem)
   const [fontSize, setFontSize] = useState(1.2);
-
-  // State để hiện/ẩn hợp âm
   const [showChords, setShowChords] = useState(true);
-
-  // State để lưu popup hợp âm
   const [selectedChord, setSelectedChord] = useState(null);
-
-  // State để lưu link nhúng YouTube
   const embedUrl = getYouTubeEmbedUrl(song.refLink);
 
   const renderContent = (content) => {
-    // Regex này nhận diện đồng thời: [hợp âm], /ghi chú/ và `chữ in đậm`
     const parts = content.split(/(\[[^\]]+\]|\/[^\/]+\/|`[^`]+`)/g);
-
     return parts.map((part, index) => {
-      // 1. Xử lý Hợp âm [ ]
       if (part.startsWith('[') && part.endsWith(']')) {
         if (!showChords) return null;
         const chordName = part.slice(1, -1);
         const newChord = transposeChord(chordName, transpose);
         return (
-          <span 
-            key={index} 
-            className="chord"
-            onClick={() => setSelectedChord(newChord)} // Bấm vào thì set state
-            style={{ cursor: 'pointer' }} // Hiện bàn tay trỏ chuột
-            title="Bấm để xem thế tay"
-          >
+          <span key={index} className="chord" onClick={() => setSelectedChord(newChord)} style={{ cursor: 'pointer' }}>
             {newChord}
           </span>
         );
       }
-
-      // 2. Note Ghi chú (Trên đầu lời nhạc)
       if (part.startsWith('/') && part.endsWith('/')) {
-        const noteText = part.slice(1, -1);
-        return (
-        <span key={index} className="song-note">
-          <span className="song-note-text">{noteText}</span>
-        </span>
-      );
+        return <span key={index} className="song-note"><span className="song-note-text">{part.slice(1, -1)}</span></span>;
       }
-
-      // 3. In đậm (Nằm ngang hàng lời nhạc)
       if (part.startsWith('`') && part.endsWith('`')) {
         return <strong key={index} className="song-bold">{part.slice(1, -1)}</strong>;
       }
-
-      // 4. Lời bài hát bình thường
       return <span key={index}>{part}</span>;
     });
   };
@@ -476,54 +325,28 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
 
   const handleEditClick = () => {
     const inputPass = prompt("Nhập mật khẩu bài hát để chỉnh sửa:");
-    
-    if (inputPass === null) return; // Người dùng bấm Hủy
-
-    if (inputPass === song.songPassword) {
-      onEdit(song); // Đúng pass thì cho vào trang sửa
-    } else {
-      alert("Sai mật khẩu rồi bạn ơi!");
-    }
+    if (inputPass === song.songPassword) onEdit(song);
+    else if (inputPass !== null) alert("Sai mật khẩu!");
   };
 
-  // Delete
   const handleDeleteClick = () => {
     const inputPass = prompt("Nhập mật khẩu bài hát để XÓA:");
-    if (inputPass === null) return;
-
-    if (inputPass === song.songPassword) {
-      onDelete(song.id); // Gọi hàm xóa từ App truyền xuống
-    } else {
-      alert("Sai mật khẩu, không thể xóa!");
-    }
+    if (inputPass === song.songPassword) onDelete();
+    else if (inputPass !== null) alert("Sai mật khẩu!");
   };
-
-  
-  
 
   return (
     <div className="song-viewer">
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
         <button className="btn-back" onClick={onBack}>← Danh sách</button>
         <button onClick={handleEditClick}>⚙ Chỉnh sửa</button>
-        {/* Nút Xóa mới */}
-          <button 
-            onClick={handleDeleteClick}
-            style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none' }}
-          >
-            🗑 Xóa bài
-          </button>
+        <button onClick={handleDeleteClick} style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none' }}>🗑 Xóa bài</button>
       </div>
 
       {embedUrl && (
         <div className="video-wrapper">
           <div className="video-responsive">
-            <iframe
-              src={embedUrl}
-              title="YouTube video player"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
+            <iframe src={embedUrl} title="Video" allowFullScreen></iframe>
           </div>
         </div>
       )}
@@ -531,158 +354,73 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
       <div className="song-header">
         <h2 style={{fontSize: '2.5rem', marginBottom: '5px'}}>{song.title}</h2>
         <p style={{fontSize: '1.2rem', color: '#666', marginTop: '0'}}>Arranger: {song.author}</p>
-        {song.refLink && (
-          <div style={{ marginTop: '10px' }}>
-            <a href={song.refLink} target="_blank" rel="noopener noreferrer" 
-               style={{ color: '#008d8aff', textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
-               📺 Nghe hoặc xem ref (Link tham khảo)
-            </a>
-          </div>
-        )}
-
+        
         <div className="controls-row" style={{display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '20px'}}>
-          {/* Cụm chỉnh Tone */}
           <div className="tone-control">
             <span>Tone: </span>
             <button onClick={() => setTranspose(prev => prev - 1)}>&minus;</button>
-            <strong style={{minWidth: '40px', textAlign: 'center', fontSize: '1.4rem', color: 'var(--primary-color)'}}>
-              {currentKey} 
-            </strong>
+            <strong style={{minWidth: '40px', textAlign: 'center', fontSize: '1.4rem', color: 'var(--primary-color)'}}>{currentKey}</strong>
             <button onClick={() => setTranspose(prev => prev + 1)}>+</button>
           </div>
-
-          {/* 2. Cụm chỉnh Cỡ chữ mới thêm vào */}
           <div className="font-control">
             <span>Chữ: </span>
             <button onClick={() => setFontSize(prev => Math.max(0.8, prev - 0.1))}>A-</button>
             <button onClick={() => setFontSize(prev => Math.min(2.5, prev + 0.1))}>A+</button>
           </div>
-
-          {/* 4. Cụm chọn màu (Bây giờ chordColor đã được xác định) */}
           <div className="color-picker" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <span style={{fontSize: '0.9rem'}}>Màu:</span>
             {colorOptions.map(color => (
-              <div 
-                key={color}
-                onClick={() => setChordColor(color)}
-                style={{ 
-                  width: '24px', 
-                  height: '24px', 
-                  backgroundColor: color, 
-                  borderRadius: '50%', 
-                  cursor: 'pointer', 
-                  border: chordColor === color ? '2px solid #333' : '1px solid #ccc',
-                  boxSizing: 'border-box'
-                }}
-              />
+              <div key={color} onClick={() => setChordColor(color)} style={{ width: '24px', height: '24px', backgroundColor: color, borderRadius: '50%', border: chordColor === color ? '2px solid #333' : '1px solid #ccc' }} />
             ))}
           </div>
-
-          {/* 3. Nút Hiện/Ẩn hợp âm */}
-          <button 
-            onClick={() => setShowChords(!showChords)}
-            style={{
-              backgroundColor: showChords ? '#e8f5e9' : '#ffebee',
-              color: showChords ? '#2e7d32' : '#c62828',
-              border: '1px solid currentColor',
-              padding: '5px 15px',
-              borderRadius: '20px',
-              fontSize: '0.9rem'
-            }}
-          >
+          <button onClick={() => setShowChords(!showChords)} style={{backgroundColor: showChords ? '#e8f5e9' : '#ffebee', color: showChords ? '#2e7d32' : '#c62828', padding: '5px 15px', borderRadius: '20px'}}>
             {showChords ? "● Hiện hợp âm" : "○ Ẩn hợp âm"}
           </button>
-
         </div>
-
       </div>
 
       <hr style={{margin: '30px 0', opacity: 0.3}} />
       
-      {/* 3. Áp dụng fontSize vào style của nội dung bài hát */}
       <div className="song-content" style={{ fontSize: `${fontSize}rem`, lineHeight: `${fontSize * 2.5}` }}>
         {renderContent(song.content)}
       </div>
 
-      {/* Nút AutoScroll */}
       <AutoScroll />
 
-      {/* Hiển thị popup hợp âm nếu có */}
       {selectedChord && (
-        <ChordViewer 
-          chord={selectedChord} 
-          onClose={() => setSelectedChord(null)} 
-        />
+        <ChordViewer chord={selectedChord} onClose={() => setSelectedChord(null)} />
       )}
     </div>
   );
 }
 
-function SongEditor({ onSave, onCancel, initialData }) {
+function SongEditor({ onSave, onCancel, initialData, currentUser }) { // <--- Nhận thêm currentUser
   const [title, setTitle] = useState(initialData?.title || "");
   const [author, setAuthor] = useState(initialData?.author || "");
   const [content, setContent] = useState(initialData?.content || "");
-  // Thêm state lưu Tone gốc
   const [key, setKey] = useState(initialData?.key || "C");
-  // Thêm state lưu mật khẩu bài hát
   const [songPassword, setSongPassword] = useState(initialData?.songPassword || ""); 
+  const [refLink, setRefLink] = useState(initialData?.refLink || "");
+  
+  // State quản lý nơi lưu (Mặc định lấy từ bài cũ, hoặc set theo role)
+  const isVip = currentUser?.role === 'hdcg_member' || currentUser?.role === 'admin';
+  const [collectionType, setCollectionType] = useState(
+    initialData?._source || (isVip ? "hdcg_songs" : "songs")
+  );
 
   const chords = ["C", "D", "E", "F", "G", "A", "B", "Cm", "Dm", "Em", "Fm", "Gm", "Am", "Bm"];
 
-  // Thêm state lưu link tham khảo
-  const [refLink, setRefLink] = useState(initialData?.refLink || "");
-
-  // Hàm chèn thông minh: Giữ Ctrl+Z và vị trí Scroll
   const smartInsert = (prefix, suffix = "") => {
     const textarea = document.getElementById("song-textarea");
     if (!textarea) return;
-
-    textarea.focus();
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selectedText = textarea.value.substring(start, end);
-
-    // Chuỗi văn bản mới sẽ chèn vào
-    const textToInsert = prefix + selectedText + suffix;
-
-    // Sử dụng execCommand để trình duyệt ghi nhận đây là một thao tác gõ phím
-    // Điều này giúp giữ lịch sử Undo (Ctrl + Z)
-    const isSuccess = document.execCommand('insertText', false, textToInsert);
-
-    // Nếu trình duyệt không hỗ trợ execCommand (hiếm gặp), dùng cách cũ làm dự phòng
-    if (!isSuccess) {
-      const newContent = textarea.value.substring(0, start) + textToInsert + textarea.value.substring(end);
-      setContent(newContent);
-    } else {
-      // Cập nhật lại state content ngay lập tức để đồng bộ
-      setContent(textarea.value);
-    }
-  };
-
-  // insert Note function
-  const insertNote = () => {
-    const textarea = document.getElementById("song-textarea");
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-
-    // Lấy phần văn bản được bôi đen
-    const selectedText = text.substring(start, end);
+    const textToInsert = prefix + textarea.value.substring(start, end) + suffix;
     
-    if (selectedText.length === 0) {
-      alert("Hãy bôi đen chữ bạn muốn tạo ghi chú bên trên!");
-      return;
+    // Hỗ trợ undo/redo
+    if (!document.execCommand('insertText', false, textToInsert)) {
+      setContent(textarea.value.substring(0, start) + textToInsert + textarea.value.substring(end));
     }
-
-    // Bao bọc phần bôi đen bằng dấu / /
-    const newText = text.substring(0, start) + `/${selectedText}/` + text.substring(end);
-    setContent(newText);
-
-    // Trả lại con trỏ chuột về sau phần vừa chèn
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + selectedText.length + 2, start + selectedText.length + 2);
-    }, 10);
   };
 
   return (
@@ -690,93 +428,59 @@ function SongEditor({ onSave, onCancel, initialData }) {
       <h2 style={{color: 'var(--primary-color)'}}>{initialData ? "Chỉnh sửa bài hát" : "Tạo bài hát mới"}</h2>
       
       <div className="editor-header">
-        <input 
-          className="input-title"
-          placeholder="Tên bài hát..." 
-          value={title} 
-          onChange={e => setTitle(e.target.value)} 
-        />
-        <input 
-          className="input-author"
-          placeholder="Tên Arranger" 
-          value={author} 
-          onChange={e => setAuthor(e.target.value)} 
-        />
+        <input className="input-title" placeholder="Tên bài hát..." value={title} onChange={e => setTitle(e.target.value)} />
+        <input className="input-author" placeholder="Tên Arranger" value={author} onChange={e => setAuthor(e.target.value)} />
       </div>
+
+      {/* --- PHẦN CHỌN CHẾ ĐỘ HIỂN THỊ (CHỈ HIỆN CHO VIP) --- */}
+      {isVip && (
+        <div style={{ margin: '15px 0', padding: '10px', background: '#f0f8ff', borderRadius: '8px', border: '1px solid #cce5ff' }}>
+          <label style={{fontWeight: 'bold', marginRight: '10px', color: '#004085'}}>🔒 Chế độ hiển thị:</label>
+          <select 
+            value={collectionType} 
+            onChange={(e) => setCollectionType(e.target.value)}
+            style={{ padding: '5px', borderRadius: '4px', border: '1px solid #b8daff' }}
+            disabled={!!initialData} // (Tuỳ chọn) Nếu đang sửa bài thì không cho đổi kho để tránh lỗi mất bài
+          >
+            <option value="hdcg_songs">Nội bộ (HDCG Member & Admin)</option>
+            <option value="songs">Công khai (Tất cả mọi người)</option>
+          </select>
+          {initialData && <small style={{display:'block', color:'#666', marginTop:'5px'}}>* Không thể thay đổi chế độ khi đang sửa bài.</small>}
+        </div>
+      )}
 
       <div className="input-group" style={{ margin: '15px 0' }}>
-        <input 
-          placeholder="Link bài hát tham khảo (Youtube, Spotify...)" 
-          value={refLink} 
-          onChange={e => setRefLink(e.target.value)}
-          className="input-author" /* Dùng tạm class này để đồng bộ style */
-        />
+        <input placeholder="Link bài hát tham khảo..." value={refLink} onChange={e => setRefLink(e.target.value)} className="input-author" />
       </div>
-
+      
       <div className="password-selection" style={{ margin: '15px 0' }}>
-        <label style={{ fontWeight: 'bold', marginRight: '10px' }}>Mật khẩu bảo vệ bài hát:</label>
-        <input 
-          type="password"
-          placeholder="Nhập mã để sửa bài sau này..."
-          value={songPassword}
-          onChange={(e) => setSongPassword(e.target.value)}
-          style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }}
-        />
+        <label>Mật khẩu bài hát:</label>
+        <input type="password" value={songPassword} onChange={(e) => setSongPassword(e.target.value)} style={{ marginLeft: 10, padding: 5 }} />
       </div>
-
+      
       <div className="tone-selection">
-        <label style={{fontWeight: 'bold', marginRight: '10px'}}>Tone gốc của bài:</label>
-        <select 
-          className="original-tone-select"
-          value={key} 
-          onChange={(e) => setKey(e.target.value)}
-        >
+        <label>Tone gốc:</label>
+        <select value={key} onChange={(e) => setKey(e.target.value)} style={{ marginLeft: 10 }}>
           {chords.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 
       <div className="toolbar" style={{marginTop: '10px'}}>
-        <p style={{fontSize: '0.9rem', color: '#666', marginBottom: '5px'}}>Click để chèn nhanh hợp âm:</p>
         <div className="chord-buttons" style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
-        {/* Nút hợp âm nhanh */}
-        {chords.map(c => (
-          <button key={c} onClick={() => smartInsert(`[${c}]`)}>{c}</button>
-        ))}
-
-        {/* Nút Add Note cho phần bôi đen */}
-        <button 
-          onClick={() => smartInsert('/', '/')} 
-          style={{ fontWeight: 'bold', color: '#000000ff' }}
-        >
-          +Note
-        </button>
-
-        {/* Nút In đậm */}
-        <button onClick={() => smartInsert('`', '`')}><b>In đậm</b></button>
-
+          {chords.map(c => <button key={c} onClick={() => smartInsert(`[${c}]`)}>{c}</button>)}
+          <button onClick={() => smartInsert('/', '/')} style={{ fontWeight: 'bold' }}>+Note</button>
+          <button onClick={() => smartInsert('`', '`')}><b>In đậm</b></button>
         </div>
       </div>
 
-      <textarea 
-        id="song-textarea"
-        placeholder="Nhập lời và đặt hợp âm trong ngoặc vuông, note trong dấu /, Ví dụ: [C]Ngày mai /hát nhỏ/ em đi..."
-        value={content}
-        onChange={e => setContent(e.target.value)}
-      />
-
+      <textarea id="song-textarea" placeholder="Nhập lời..." value={content} onChange={e => setContent(e.target.value)} />
+      
       <div className="editor-footer">
-        <button 
-          className="btn-save" 
-          onClick={() => {
-            if(!songPassword) {
-               alert("Vui lòng đặt mật khẩu cho bài hát!");
-               return;
-            }
-            onSave({ title, author, content, key, songPassword, refLink });
-          }}
-        >
-          {initialData ? "LƯU THAY ĐỔI" : "ĐĂNG BÀI HÁT"}
-        </button>
+        <button className="btn-save" onClick={() => {
+           if(!songPassword) { alert("Vui lòng đặt mật khẩu!"); return; }
+           // Truyền thêm collectionType ra ngoài
+           onSave({ title, author, content, key, songPassword, refLink }, collectionType);
+        }}>{initialData ? "LƯU THAY ĐỔI" : "ĐĂNG BÀI HÁT"}</button>
         <button onClick={onCancel}>Hủy</button>
       </div>
     </div>
