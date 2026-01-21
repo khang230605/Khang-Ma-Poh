@@ -321,7 +321,18 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
     });
   };
 
-  const currentKey = transposeChord(song.key || "C", transpose);
+  // --- THAY ĐỔI Ở ĐÂY ---
+  
+  // 1. Xác định Tone dùng để hiển thị (Ưu tiên Tone Viết)
+  // Nếu không có writtenKey (bài cũ) thì mới lấy key (Tone gốc)
+  const displayBaseKey = song.writtenKey || song.key || "C";
+  
+  // 2. Tính toán Tone đỏ hiện tại dựa trên Tone Viết
+  const currentKey = transposeChord(displayBaseKey, transpose);
+
+  // 3. Lấy Tone gốc (Audio) để hiển thị thông tin phụ
+  const originalAudioKey = song.key || "C";
+  // ----------------------
 
   const handleEditClick = () => {
     const inputPass = prompt("Nhập mật khẩu bài hát để chỉnh sửa:");
@@ -359,9 +370,18 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
           <div className="tone-control">
             <span>Tone: </span>
             <button onClick={() => setTranspose(prev => prev - 1)}>&minus;</button>
+            {/* Tone này giờ là Tone Viết (Hợp âm) */}
             <strong style={{minWidth: '40px', textAlign: 'center', fontSize: '1.4rem', color: 'var(--primary-color)'}}>{currentKey}</strong>
             <button onClick={() => setTranspose(prev => prev + 1)}>+</button>
+
+            {/* Hiển thị Tone Audio bên cạnh (nếu khác nhau) */}
+            {originalAudioKey !== displayBaseKey && (
+               <span style={{ marginLeft: '10px', fontSize: '0.9rem', color: '#348d00', borderLeft: '1px solid #0f7e00', paddingLeft: '10px' }}>
+                 🎧 Tone gốc: <b>{originalAudioKey}</b>
+               </span>
+            )}
           </div>
+
           <div className="font-control">
             <span>Chữ: </span>
             <button onClick={() => setFontSize(prev => Math.max(0.8, prev - 0.1))}>A-</button>
@@ -394,21 +414,28 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
   );
 }
 
-function SongEditor({ onSave, onCancel, initialData, currentUser }) { // <--- Nhận thêm currentUser
+function SongEditor({ onSave, onCancel, initialData, currentUser }) {
   const [title, setTitle] = useState(initialData?.title || "");
   const [author, setAuthor] = useState(initialData?.author || "");
   const [content, setContent] = useState(initialData?.content || "");
-  const [key, setKey] = useState(initialData?.key || "C");
   const [songPassword, setSongPassword] = useState(initialData?.songPassword || ""); 
   const [refLink, setRefLink] = useState(initialData?.refLink || "");
   
-  // State quản lý nơi lưu (Mặc định lấy từ bài cũ, hoặc set theo role)
+  // --- THAY ĐỔI 1: Tách biệt Tone gốc (Audio) và Tone viết (Hợp âm) ---
+  const [key, setKey] = useState(initialData?.key || "C"); // Tone Audio
+  const [writtenKey, setWrittenKey] = useState(initialData?.writtenKey || "C"); // Tone Hợp âm trong bài
+
+  // State quản lý nơi lưu
   const isVip = currentUser?.role === 'hdcg_member' || currentUser?.role === 'admin';
   const [collectionType, setCollectionType] = useState(
     initialData?._source || (isVip ? "hdcg_songs" : "songs")
   );
 
-  const chords = ["C", "D", "E", "F", "G", "A", "B", "Cm", "Dm", "Em", "Fm", "Gm", "Am", "Bm"];
+  // Danh sách nốt đầy đủ (Thăng/Giáng)
+  const chords = [
+    "C", "C#", "Db", "D", "Eb", "E", "F", "F#", "Gb", "G", "Ab", "A", "Bb", "B",
+    "Cm", "C#m", "Dm", "Ebm", "Em", "Fm", "F#m", "Gm", "G#m", "Am", "Bbm", "Bm"
+  ];
 
   const smartInsert = (prefix, suffix = "") => {
     const textarea = document.getElementById("song-textarea");
@@ -417,7 +444,6 @@ function SongEditor({ onSave, onCancel, initialData, currentUser }) { // <--- Nh
     const end = textarea.selectionEnd;
     const textToInsert = prefix + textarea.value.substring(start, end) + suffix;
     
-    // Hỗ trợ undo/redo
     if (!document.execCommand('insertText', false, textToInsert)) {
       setContent(textarea.value.substring(0, start) + textToInsert + textarea.value.substring(end));
     }
@@ -432,7 +458,6 @@ function SongEditor({ onSave, onCancel, initialData, currentUser }) { // <--- Nh
         <input className="input-author" placeholder="Tên Arranger" value={author} onChange={e => setAuthor(e.target.value)} />
       </div>
 
-      {/* --- PHẦN CHỌN CHẾ ĐỘ HIỂN THỊ (CHỈ HIỆN CHO VIP) --- */}
       {isVip && (
         <div style={{ margin: '15px 0', padding: '10px', background: '#f0f8ff', borderRadius: '8px', border: '1px solid #cce5ff' }}>
           <label style={{fontWeight: 'bold', marginRight: '10px', color: '#004085'}}>🔒 Chế độ hiển thị:</label>
@@ -440,12 +465,11 @@ function SongEditor({ onSave, onCancel, initialData, currentUser }) { // <--- Nh
             value={collectionType} 
             onChange={(e) => setCollectionType(e.target.value)}
             style={{ padding: '5px', borderRadius: '4px', border: '1px solid #b8daff' }}
-            disabled={!!initialData} // (Tuỳ chọn) Nếu đang sửa bài thì không cho đổi kho để tránh lỗi mất bài
+            disabled={!!initialData}
           >
             <option value="hdcg_songs">Nội bộ (HDCG Member & Admin)</option>
             <option value="songs">Công khai (Tất cả mọi người)</option>
           </select>
-          {initialData && <small style={{display:'block', color:'#666', marginTop:'5px'}}>* Không thể thay đổi chế độ khi đang sửa bài.</small>}
         </div>
       )}
 
@@ -458,18 +482,48 @@ function SongEditor({ onSave, onCancel, initialData, currentUser }) { // <--- Nh
         <input type="password" value={songPassword} onChange={(e) => setSongPassword(e.target.value)} style={{ marginLeft: 10, padding: 5 }} />
       </div>
       
-      <div className="tone-selection">
-        <label>Tone gốc:</label>
-        <select value={key} onChange={(e) => setKey(e.target.value)} style={{ marginLeft: 10 }}>
-          {chords.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+      {/* --- THAY ĐỔI 2: Giao diện chọn 2 loại Tone --- */}
+      <div className="tone-selection" style={{ display: 'flex', gap: '20px', alignItems: 'center', background: '#f9f9f9', padding: '10px', borderRadius: '8px' }}>
+        
+        {/* Cột 1: Tone gốc (Audio) */}
+        <div>
+          <label style={{fontWeight: 'bold', display: 'block', fontSize: '0.8rem', color: '#666'}}>Tone gốc (Audio):</label>
+          <select 
+            value={key} 
+            onChange={(e) => setKey(e.target.value)} 
+            style={{ padding: '5px', minWidth: '80px', marginTop: '5px', border: '2px solid var(--primary-color)', borderRadius: '4px' }}
+          >
+            {chords.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+
+        <div style={{fontSize: '1.5rem', color: '#ccc'}}>→</div>
+
+        {/* Cột 2: Tone viết (Trong bài) */}
+        <div>
+          <label style={{fontWeight: 'bold', display: 'block', fontSize: '0.8rem', color: '#666'}}>Tone viết (Hợp âm):</label>
+          <select 
+            value={writtenKey} 
+            onChange={(e) => setWrittenKey(e.target.value)} 
+            style={{ padding: '5px', minWidth: '80px', marginTop: '5px', border: '1px solid #ccc', borderRadius: '4px' }}
+          >
+            {chords.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+
+        {/* Gợi ý nhỏ */}
+        {key !== writtenKey && (
+           <div style={{fontSize: '0.8rem', color: '#d71920', fontStyle: 'italic', maxWidth: '150px'}}>
+             * Bài hát sẽ hiển thị hợp âm <b>{writtenKey}</b>, nhưng tone gốc là <b>{key}</b>.
+           </div>
+        )}
       </div>
 
       <div className="toolbar" style={{marginTop: '10px'}}>
-        <div className="chord-buttons" style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+        <div className="chord-buttons" style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10, overflowX: 'auto', whiteSpace: 'nowrap', padding: '5px 0', display: 'flex', gap: '5px' }}>
           {chords.map(c => <button key={c} onClick={() => smartInsert(`[${c}]`)}>{c}</button>)}
-          <button onClick={() => smartInsert('/', '/')} style={{ fontWeight: 'bold' }}>+Note</button>
-          <button onClick={() => smartInsert('`', '`')}><b>In đậm</b></button>
+          <button onClick={() => smartInsert('/', '/')} style={{ fontWeight: 'bold', minWidth: '60px' }}>+Note</button>
+          <button onClick={() => smartInsert('`', '`')} style={{ minWidth: '70px' }}><b>In đậm</b></button>
         </div>
       </div>
 
@@ -478,8 +532,16 @@ function SongEditor({ onSave, onCancel, initialData, currentUser }) { // <--- Nh
       <div className="editor-footer">
         <button className="btn-save" onClick={() => {
            if(!songPassword) { alert("Vui lòng đặt mật khẩu!"); return; }
-           // Truyền thêm collectionType ra ngoài
-           onSave({ title, author, content, key, songPassword, refLink }, collectionType);
+           // --- THAY ĐỔI 3: Lưu thêm writtenKey ---
+           onSave({ 
+             title, 
+             author, 
+             content, 
+             key,         // Tone gốc
+             writtenKey,  // Tone viết
+             songPassword, 
+             refLink 
+           }, collectionType);
         }}>{initialData ? "LƯU THAY ĐỔI" : "ĐĂNG BÀI HÁT"}</button>
         <button onClick={onCancel}>Hủy</button>
       </div>
