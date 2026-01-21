@@ -5,7 +5,7 @@ import './App.css';
 import myLogo from './assets/logonoback.png'; 
 import hdcgLogo from './assets/hdcglogo.jpg';
 import { db } from './firebase';
-import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
 
 // --- COMPONENTS ---
 import UserAuth from './components/UserAuth';
@@ -156,6 +156,39 @@ function App() {
     } catch (e) { console.error(e); alert("Có lỗi xảy ra!"); }
   };
 
+  // --- MỚI: HÀM LÀM MỚI BÀI HÁT ---
+  const handleRefreshSong = async () => {
+    if (!selectedSong) return;
+
+    try {
+      // 1. Xác định bài hát đang ở collection nào
+      const collectionName = selectedSong._source || "songs"; 
+      
+      // 2. Lấy dữ liệu mới nhất từ Firebase
+      const docRef = doc(db, collectionName, selectedSong.id);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const freshData = { id: docSnap.id, ...docSnap.data(), _source: collectionName };
+        
+        // 3. Cập nhật vào State đang hiển thị
+        setSelectedSong(freshData);
+
+        // 4. Cập nhật luôn vào danh sách tổng bên dưới (để nếu back ra ko bị cũ)
+        setSongs(prevSongs => prevSongs.map(s => s.id === freshData.id ? freshData : s));
+        
+        // Thông báo nhẹ (hoặc có thể bỏ nếu thích)
+        // alert("Đã cập nhật dữ liệu mới nhất! 🔄");
+      } else {
+        alert("Bài hát này có vẻ đã bị xóa!");
+        setSelectedSong(null);
+      }
+    } catch (e) {
+      console.error("Lỗi refresh:", e);
+      alert("Không tải được dữ liệu mới.");
+    }
+  };
+
   const startEditing = (song) => { setSelectedSong(null); setEditingData(song); setIsEditing(true); };
 
   const handleDelete = async (songId) => {
@@ -204,6 +237,7 @@ function App() {
                 onBack={() => setSelectedSong(null)} 
                 onEdit={startEditing} 
                 onDelete={() => handleDelete(selectedSong.id)}
+                onRefresh={handleRefreshSong}
                 chordColor={chordColor} 
                 setChordColor={setChordColor}
               />
@@ -291,11 +325,13 @@ function App() {
 
 // --- SONG DETAIL & EDITOR COMPONENTS (Giữ nguyên) ---
 
-function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor }) {
+function SongDetail({ song, onBack, onEdit, onDelete, onRefresh, chordColor, setChordColor }) {
   const [transpose, setTranspose] = useState(0);
   const [fontSize, setFontSize] = useState(1.2);
   const [showChords, setShowChords] = useState(true);
   const [selectedChord, setSelectedChord] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false); // State cho nút xoay
+
   const embedUrl = getYouTubeEmbedUrl(song.refLink);
 
   const renderContent = (content) => {
@@ -321,18 +357,10 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
     });
   };
 
-  // --- THAY ĐỔI Ở ĐÂY ---
-  
-  // 1. Xác định Tone dùng để hiển thị (Ưu tiên Tone Viết)
-  // Nếu không có writtenKey (bài cũ) thì mới lấy key (Tone gốc)
+  // Logic hiển thị Tone
   const displayBaseKey = song.writtenKey || song.key || "C";
-  
-  // 2. Tính toán Tone đỏ hiện tại dựa trên Tone Viết
   const currentKey = transposeChord(displayBaseKey, transpose);
-
-  // 3. Lấy Tone gốc (Audio) để hiển thị thông tin phụ
   const originalAudioKey = song.key || "C";
-  // ----------------------
 
   const handleEditClick = () => {
     const inputPass = prompt("Nhập mật khẩu bài hát để chỉnh sửa:");
@@ -346,12 +374,49 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
     else if (inputPass !== null) alert("Sai mật khẩu!");
   };
 
+  // Hàm xử lý nút làm mới
+  const handleRefreshClick = async () => {
+    if (onRefresh) {
+      setIsRefreshing(true);
+      await onRefresh();
+      setTimeout(() => setIsRefreshing(false), 500);
+    } else {
+      console.error("Hàm onRefresh chưa được truyền vào component SongDetail");
+    }
+  };
+
   return (
     <div className="song-viewer">
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
         <button className="btn-back" onClick={onBack}>← Danh sách</button>
-        <button onClick={handleEditClick}>⚙ Chỉnh sửa</button>
-        <button onClick={handleDeleteClick} style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none' }}>🗑 Xóa bài</button>
+        
+        <div style={{display: 'flex', gap: '10px'}}>
+          {/* NÚT LÀM MỚI */}
+          <button 
+            onClick={handleRefreshClick} 
+            style={{ 
+               backgroundColor: '#17a2b8', 
+               color: 'white', 
+               border: 'none',
+               display: 'flex',
+               alignItems: 'center',
+               gap: '5px'
+            }}
+            title="Tải lại nội dung mới nhất"
+          >
+            <span style={{ 
+               display: 'inline-block', 
+               transition: 'transform 0.5s',
+               transform: isRefreshing ? 'rotate(360deg)' : 'rotate(0deg)'
+            }}>
+              🔄
+            </span> 
+            <span className="hide-on-mobile">Làm mới</span>
+          </button>
+
+          <button onClick={handleEditClick}>⚙ Sửa</button>
+          <button onClick={handleDeleteClick} style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none' }}>🗑 Xóa</button>
+        </div>
       </div>
 
       {embedUrl && (
@@ -370,14 +435,12 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
           <div className="tone-control">
             <span>Tone: </span>
             <button onClick={() => setTranspose(prev => prev - 1)}>&minus;</button>
-            {/* Tone này giờ là Tone Viết (Hợp âm) */}
             <strong style={{minWidth: '40px', textAlign: 'center', fontSize: '1.4rem', color: 'var(--primary-color)'}}>{currentKey}</strong>
             <button onClick={() => setTranspose(prev => prev + 1)}>+</button>
-
-            {/* Hiển thị Tone Audio bên cạnh (nếu khác nhau) */}
+            
             {originalAudioKey !== displayBaseKey && (
-               <span style={{ marginLeft: '10px', fontSize: '0.9rem', color: '#348d00', borderLeft: '1px solid #0f7e00', paddingLeft: '10px' }}>
-                 🎧 Tone gốc: <b>{originalAudioKey}</b>
+               <span style={{ marginLeft: '10px', fontSize: '0.9rem', color: '#666', borderLeft: '1px solid #ccc', paddingLeft: '10px' }}>
+                 🎧 Audio: <b>{originalAudioKey}</b>
                </span>
             )}
           </div>
@@ -410,6 +473,12 @@ function SongDetail({ song, onBack, onEdit, onDelete, chordColor, setChordColor 
       {selectedChord && (
         <ChordViewer chord={selectedChord} onClose={() => setSelectedChord(null)} />
       )}
+      
+      <style>{`
+        @media (max-width: 600px) {
+          .hide-on-mobile { display: none; }
+        }
+      `}</style>
     </div>
   );
 }
