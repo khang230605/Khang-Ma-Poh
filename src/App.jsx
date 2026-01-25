@@ -16,6 +16,7 @@ import ToneFinder from './ToneFinder';
 import ChordViewer from './ChordViewer';
 import SetlistManager from './SetlistManager';
 import AutoScroll from './components/AutoScroll';
+import GuestSongView from './guest/GuestSongView';
 
 // --- SIDEBAR CẬP NHẬT ---
 const Sidebar = ({ activeTab, setActiveTab, theme, setTheme, currentUser, onLogout, resetView }) => {
@@ -58,6 +59,13 @@ const Sidebar = ({ activeTab, setActiveTab, theme, setTheme, currentUser, onLogo
 const colorOptions = ['#d71920', '#0056b3', '#28a745', '#6f42c1', '#fd7e14'];
 
 function App() {
+  // -------------------------------------------------------
+  // 1. KIỂM TRA GUEST NGAY TẠI ĐẦU (Không dùng Hook)
+  // -------------------------------------------------------
+  if (window.location.pathname.startsWith('/guest')) {
+    return <GuestSongView />;
+  }
+  // --- 2. APP CHÍNH VỚI AUTH ---
   const [currentUser, setCurrentUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
@@ -274,7 +282,7 @@ function App() {
                         <h2 style={{margin:0, fontSize:'1.2rem'}}>Xin chào, {currentUser.name} 👋</h2>
                         <span style={{fontSize:'0.8rem', color:'#666'}}>
                            {currentUser.role === 'admin' ? 'Admin hệ thống' : 
-                            (currentUser.role === 'hdcg_member' ? 'Thành viên HDCG Worship' : 'Thành viên')}
+                            (currentUser.role === 'hdcg_member' ? 'Thành viên HDCG Band' : 'Thành viên')}
                         </span>
                       </div>
                   </div>
@@ -385,12 +393,50 @@ function SongDetail({ song, onBack, onEdit, onDelete, onRefresh, chordColor, set
     }
   };
 
+  // Xử lý nút share
+  // Hàm tạo Slug không dấu (để link nhìn cho đẹp)
+  const toSlug = (str) => {
+    return str.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[đĐ]/g, 'd')
+      .replace(/([^0-9a-z-\s])/g, '')
+      .replace(/(\s+)/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  const handleShareClick = () => {
+    // Tạo link: domain.com/guest?id=XXX&name=ten-bai-hat
+    // Phần &name=... chỉ để đẹp link, logic chính vẫn ăn theo id=...
+    const slug = toSlug(song.title);
+    const shareUrl = `${window.location.origin}/guest?id=${song.id}&n=${slug}`;
+    
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert("Đã copy link chia sẻ vào bộ nhớ tạm! \nBạn có thể share source bài ngay!!! 🔗");
+    });
+  };
+
   return (
     <div className="song-viewer">
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
         <button className="btn-back" onClick={onBack}>← Danh sách</button>
         
         <div style={{display: 'flex', gap: '10px'}}>
+
+          {/* NÚT SHARE MỚI */}
+          <button 
+            onClick={handleShareClick} 
+            style={{ 
+               backgroundColor: '#6f42c1', // Màu tím
+               color: 'white', 
+               border: 'none',
+               display: 'flex', alignItems: 'center', gap: '5px'
+            }}
+            title="Chia sẻ link cho người ngoài xem"
+          >
+            <span>🔗</span> 
+            <span className="hide-on-mobile">Share</span>
+          </button>
+
           {/* NÚT LÀM MỚI */}
           <button 
             onClick={handleRefreshClick} 
