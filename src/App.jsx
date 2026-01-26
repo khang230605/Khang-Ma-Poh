@@ -17,6 +17,7 @@ import ChordViewer from './ChordViewer';
 import SetlistManager from './SetlistManager';
 import AutoScroll from './components/AutoScroll';
 import GuestSongView from './guest/GuestSongView';
+import ToneControl from './components/ToneControl';
 
 // --- SIDEBAR CẬP NHẬT ---
 const Sidebar = ({ activeTab, setActiveTab, theme, setTheme, currentUser, onLogout, resetView }) => {
@@ -515,6 +516,12 @@ function SongDetail({ song, onBack, onEdit, onDelete, onRefresh, chordColor, set
       </div>
 
       <AutoScroll />
+      {/* Nút chỉnh Tone (Bên phải) */}
+      <ToneControl 
+        transpose={transpose} 
+        setTranspose={setTranspose} 
+        currentKey={currentKey} 
+      />
 
       {selectedChord && (
         <ChordViewer chord={selectedChord} onClose={() => setSelectedChord(null)} />

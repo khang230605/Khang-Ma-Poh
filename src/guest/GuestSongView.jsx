@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase'; 
 import { doc, getDoc } from "firebase/firestore";
 import AutoScroll from '../components/AutoScroll';
+// --- 1. IMPORT COMPONENT MỚI ---
+import FontSizeControl from '../components/FontSizeControl'; 
+// ------------------------------
 import myLogo from '../assets/logonoback.png'; 
 import hdcgLogo from '../assets/hdcglogo.jpg';
 import { getYouTubeEmbedUrl } from '../youtubeLink';
@@ -13,63 +16,33 @@ const GuestSongView = () => {
   const [fontSize, setFontSize] = useState(1.2);
 
   useEffect(() => {
+    // ... (Giữ nguyên logic fetch cũ) ...
     const fetchGuestSong = async () => {
       const params = new URLSearchParams(window.location.search);
       const songId = params.get('id');
-
-      if (!songId) {
-        setError("Đường dẫn không hợp lệ!");
-        setLoading(false);
-        return;
-      }
-
+      if (!songId) { setError("Đường dẫn không hợp lệ!"); setLoading(false); return; }
       try {
         let docRef = doc(db, "songs", songId);
         let docSnap = await getDoc(docRef);
-
         if (!docSnap.exists()) {
           docRef = doc(db, "hdcg_songs", songId);
           docSnap = await getDoc(docRef);
         }
-
-        if (docSnap.exists()) {
-          setSong({ id: docSnap.id, ...docSnap.data() });
-        } else {
-          setError("Bài hát không tồn tại hoặc đã bị xóa.");
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Lỗi kết nối.");
-      }
+        if (docSnap.exists()) { setSong({ id: docSnap.id, ...docSnap.data() }); } 
+        else { setError("Bài hát không tồn tại hoặc đã bị xóa."); }
+      } catch (err) { console.error(err); setError("Lỗi kết nối."); }
       setLoading(false);
     };
-
     fetchGuestSong();
   }, []);
 
-  // --- HÀM SỬA LỖI XUỐNG DÒNG ---
   const renderCleanLyrics = (content) => {
     if (!content) return null;
-    
-    // BƯỚC 1: Xóa sạch toàn bộ hợp âm [...] trước
-    // Điều này giúp loại bỏ các dấu '/' trong hợp âm Slash (VD: [C/G]), 
-    // tránh việc Regex bên dưới hiểu nhầm là ký hiệu Ghi chú /.../
     const contentNoChords = content.replace(/\[[^\]]+\]/g, '');
-
-    // BƯỚC 2: Tách chuỗi để xử lý Note /.../ và In đậm `...`
     const parts = contentNoChords.split(/(\/[^\/]+\/|`[^`]+`)/g);
-
     return parts.map((part, index) => {
-      // 1. Note ghi chú
-      if (part.startsWith('/') && part.endsWith('/')) {
-        return <span key={index} style={{color: '#666', fontSize: '0.9em', fontStyle: 'italic', display: 'block', margin: '5px 0'}}>{part.slice(1, -1)}</span>;
-      }
-      // 2. In đậm
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return <strong key={index}>{part.slice(1, -1)}</strong>;
-      }
-      
-      // 3. Lời bài hát thường (Vì đã xóa hợp âm ở Bước 1 nên chỉ cần in ra)
+      if (part.startsWith('/') && part.endsWith('/')) return <span key={index} style={{color: '#666', fontSize: '0.9em', fontStyle: 'italic', display: 'block', margin: '5px 0'}}>{part.slice(1, -1)}</span>;
+      if (part.startsWith('`') && part.endsWith('`')) return <strong key={index}>{part.slice(1, -1)}</strong>;
       return <span key={index}>{part}</span>;
     });
   };
@@ -109,12 +82,8 @@ const GuestSongView = () => {
         </div>
       </div>
 
-      <div className="guest-tools">
-         <div className="font-control">
-            <button onClick={() => setFontSize(p => Math.max(0.8, p - 0.1))}>A-</button>
-            <button onClick={() => setFontSize(p => Math.min(2.5, p + 0.1))}>A+</button>
-         </div>
-      </div>
+      {/* --- 2. DÙNG COMPONENT MỚI Ở ĐÂY --- */}
+      <FontSizeControl fontSize={fontSize} setFontSize={setFontSize} />
       
       <AutoScroll />
 
@@ -136,15 +105,8 @@ const GuestSongView = () => {
         
         .lyrics-box { white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        .guest-tools {
-            position: fixed; bottom: 20px; left: 20px; z-index: 99;
-            background: rgba(255,255,255,0.9); padding: 5px; border-radius: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2); border: 1px solid #eee;
-        }
-        .font-control button {
-            width: 35px; height: 35px; border-radius: 50%; border: 1px solid #ddd;
-            background: white; margin-right: 5px; cursor: pointer; font-weight: bold;
-        }
+        /* Đã xóa style .guest-tools cũ vì không dùng nữa */
+
         @media (max-width: 600px) {
             .guest-header { padding: 10px; }
             .logo-group img { height: 30px; }
