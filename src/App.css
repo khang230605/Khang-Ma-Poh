@@ -727,7 +727,7 @@ input[type="range"]::-webkit-slider-thumb {
   }
   
   /* Ẩn các nút cũ nếu còn sót */
-  .header-controls, .tone-btn {
+  .header-controls { 
     display: none !important;
   }
 }
