@@ -118,67 +118,90 @@ const AdminDashboard = () => {
       )}
 
       <style>{`
+        /* --- STYLE GỐC (GIỮ NGUYÊN HOẶC SỬA NHẸ) --- */
         .admin-container { 
-          padding: 20px; 
-          background: white; 
-          border-radius: 12px; 
-          box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-          /* Đảm bảo container không bị tràn khỏi màn hình cha */
-          max-width: 100%; 
-          box-sizing: border-box;
+            padding: 20px; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+            width: 100%; /* Đảm bảo không vượt quá cha */
+            box-sizing: border-box; /* Tính cả padding vào width */
         }
         
-        .user-table { width: 100%; border-collapse: collapse; }
+        .table-wrapper { width: 100%; }
+        
+        .user-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            /* min-width: 600px; <--- NGUYÊN NHÂN LỖI LÀ DÒNG NÀY (Ở PC CÓ THỂ GIỮ, NHƯNG MOBILE PHẢI BỎ) */
+        }
+        
         .user-table th { text-align: left; padding: 12px; background: #f8f9fa; color: #666; font-weight: bold; border-bottom: 2px solid #eee; }
         .user-table td { padding: 12px; border-bottom: 1px solid #eee; }
         
-        /* --- CSS RESPONSIVE (Card View cho Mobile) --- */
+        /* --- CSS RESPONSIVE (FIX LỖI TRÀN) --- */
         @media (max-width: 768px) {
-          /* 1. Ẩn tiêu đề bảng (thead) vì mình sẽ đưa tiêu đề vào từng dòng */
-          .user-table thead {
-            display: none;
-          }
+            /* 1. Giảm padding của container chính để tiết kiệm diện tích */
+            .admin-container {
+            padding: 10px; 
+            }
 
-          /* 2. Biến table, tbody, tr, td thành dạng block để xếp chồng lên nhau */
-          .user-table, .user-table tbody, .user-table tr, .user-table td {
+            /* 2. RESET CHIỀU RỘNG BẢNG */
+            .user-table {
+            min-width: 0 !important; /* QUAN TRỌNG: Hủy bỏ giới hạn 600px cũ */
             display: block;
             width: 100%;
-          }
+            }
 
-          /* 3. Style cho từng dòng (tr) thành một cái Card */
-          .user-table tr {
+            /* 3. Ẩn header cũ */
+            .user-table thead { display: none; }
+            .user-table tbody, .user-table tr, .user-table td { display: block; width: 100%; box-sizing: border-box; }
+
+            /* 4. Style thẻ Card */
+            .user-table tr {
             margin-bottom: 15px;
-            border: 1px solid #ddd;
+            border: 1px solid #e0e0e0;
             border-radius: 8px;
             background: #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-          }
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            overflow: hidden; /* Bo góc gọn gàng */
+            }
 
-          /* 4. Style cho từng ô (td) */
-          .user-table td {
-            text-align: right; /* Nội dung nằm bên phải */
-            padding-left: 50%; /* Chừa chỗ cho label bên trái */
+            /* 5. Căn chỉnh nội dung trong thẻ */
+            .user-table td {
+            text-align: right; /* Giá trị nằm bên phải */
+            padding-left: 45%; /* Dành 45% bên trái cho nhãn (Label) */
             position: relative;
-            border-bottom: 1px solid #eee;
-          }
+            border-bottom: 1px solid #f0f0f0;
+            min-height: 40px; /* Đảm bảo dòng không quá dẹt */
+            display: flex; /* Dùng flex để căn giữa dọc */
+            align-items: center;
+            justify-content: flex-end; /* Đẩy nội dung sang phải */
+            }
 
-          /* Dòng cuối cùng của card không cần gạch dưới */
-          .user-table td:last-child {
-            border-bottom: none;
-          }
-
-          /* 5. Dùng pseudo-element ::before để hiện tiêu đề (lấy từ data-label) */
-          .user-table td::before {
-            content: attr(data-label); /* Lấy giá trị từ attribute data-label */
+            /* 6. Nhãn (Label) bên trái */
+            .user-table td::before {
+            content: attr(data-label);
             position: absolute;
-            left: 15px;
-            width: 45%;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%); /* Căn giữa dọc tuyệt đối */
+            width: 40%;
             text-align: left;
-            font-weight: bold;
-            color: #555;
-          }
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9rem;
+            }
+
+            /* Dòng cuối cùng không cần gạch dưới */
+            .user-table td:last-child { border-bottom: none; }
+            
+            /* Chỉnh lại cái dropdown cho đẹp trên mobile */
+            .user-table select {
+            max-width: 100%; /* Không cho tràn */
+            }
         }
-      `}</style>
+    `}</style>
     </div>
   );
 };
