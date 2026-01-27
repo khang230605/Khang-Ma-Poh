@@ -118,90 +118,95 @@ const AdminDashboard = () => {
       )}
 
       <style>{`
-        /* --- STYLE GỐC (GIỮ NGUYÊN HOẶC SỬA NHẸ) --- */
+        /* --- STYLE CHO PC (Mặc định) --- */
         .admin-container { 
-            padding: 20px; 
-            background: white; 
-            border-radius: 12px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-            width: 100%; /* Đảm bảo không vượt quá cha */
-            box-sizing: border-box; /* Tính cả padding vào width */
+          padding: 20px; 
+          background: white; 
+          border-radius: 12px; 
+          box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+          width: 100%; 
+          box-sizing: border-box; 
         }
         
-        .table-wrapper { width: 100%; }
+        .table-wrapper { width: 100%; overflow-x: auto; }
         
         .user-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            /* min-width: 600px; <--- NGUYÊN NHÂN LỖI LÀ DÒNG NÀY (Ở PC CÓ THỂ GIỮ, NHƯNG MOBILE PHẢI BỎ) */
+          width: 100%; 
+          border-collapse: collapse; 
         }
         
         .user-table th { text-align: left; padding: 12px; background: #f8f9fa; color: #666; font-weight: bold; border-bottom: 2px solid #eee; }
         .user-table td { padding: 12px; border-bottom: 1px solid #eee; }
         
-        /* --- CSS RESPONSIVE (FIX LỖI TRÀN) --- */
+        /* --- CSS RESPONSIVE CHO MOBILE (TỐI ƯU TRÀN VIỀN) --- */
         @media (max-width: 768px) {
-            /* 1. Giảm padding của container chính để tiết kiệm diện tích */
-            .admin-container {
-            padding: 10px; 
-            }
+          /* 1. KỸ THUẬT "BREAK OUT" (PHÁ VỠ KHUNG CHA) */
+          .admin-container {
+            /* Giả sử padding của main-wrapper là 20px, ta dùng margin âm để kéo dãn ra */
+            margin-left: -20px; 
+            margin-right: -20px;
+            width: calc(100% + 40px) !important; /* Bù lại phần đã kéo dãn */
+            
+            border-radius: 0; /* Vuông góc để liền mạch với màn hình */
+            box-shadow: none; /* Bỏ bóng đổ cho giống giao diện native app */
+            border-top: 1px solid #eee; /* Thêm đường kẻ nhẹ ngăn cách header */
+            padding: 15px; /* Padding nội bộ để chữ không dính sát mép màn hình */
+          }
 
-            /* 2. RESET CHIỀU RỘNG BẢNG */
-            .user-table {
-            min-width: 0 !important; /* QUAN TRỌNG: Hủy bỏ giới hạn 600px cũ */
+          /* 2. Ép bảng full width */
+          .user-table, .user-table tbody {
             display: block;
-            width: 100%;
-            }
+            width: 100% !important;
+          }
 
-            /* 3. Ẩn header cũ */
-            .user-table thead { display: none; }
-            .user-table tbody, .user-table tr, .user-table td { display: block; width: 100%; box-sizing: border-box; }
+          .user-table thead { display: none; } 
 
-            /* 4. Style thẻ Card */
-            .user-table tr {
+          /* 3. Style thẻ Card (Từng dòng user) */
+          .user-table tr {
+            display: block;
+            width: 100% !important;
             margin-bottom: 15px;
             border: 1px solid #e0e0e0;
-            border-radius: 8px;
+            border-radius: 12px; /* Bo góc thẻ con tròn trịa hơn */
             background: #fff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            overflow: hidden; /* Bo góc gọn gàng */
-            }
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); /* Bóng đổ đậm hơn chút cho nổi */
+            box-sizing: border-box; 
+          }
 
-            /* 5. Căn chỉnh nội dung trong thẻ */
-            .user-table td {
-            text-align: right; /* Giá trị nằm bên phải */
-            padding-left: 45%; /* Dành 45% bên trái cho nhãn (Label) */
-            position: relative;
-            border-bottom: 1px solid #f0f0f0;
-            min-height: 40px; /* Đảm bảo dòng không quá dẹt */
-            display: flex; /* Dùng flex để căn giữa dọc */
+          /* 4. Nội dung trong thẻ */
+          .user-table td {
+            display: flex; 
+            justify-content: space-between; 
             align-items: center;
-            justify-content: flex-end; /* Đẩy nội dung sang phải */
-            }
+            width: 100%;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f5f5f5;
+            text-align: right; 
+            box-sizing: border-box;
+          }
+          
+          .user-table td:last-child { border-bottom: none; }
 
-            /* 6. Nhãn (Label) bên trái */
-            .user-table td::before {
+          /* 5. Label bên trái */
+          .user-table td::before {
             content: attr(data-label);
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%); /* Căn giữa dọc tuyệt đối */
-            width: 40%;
-            text-align: left;
             font-weight: 600;
-            color: #666;
-            font-size: 0.9rem;
-            }
+            color: #444;
+            text-align: left;
+            margin-right: 15px;
+            white-space: nowrap; 
+            flex-shrink: 0; 
+            font-size: 0.95rem;
+          }
 
-            /* Dòng cuối cùng không cần gạch dưới */
-            .user-table td:last-child { border-bottom: none; }
-            
-            /* Chỉnh lại cái dropdown cho đẹp trên mobile */
-            .user-table select {
-            max-width: 100%; /* Không cho tràn */
-            }
+          /* 6. Dropdown chọn quyền */
+          .user-table select {
+            width: auto;
+            min-width: 130px; /* Đảm bảo nút chọn đủ to */
+            padding: 6px;
+          }
         }
-    `}</style>
+      `}</style>
     </div>
   );
 };
