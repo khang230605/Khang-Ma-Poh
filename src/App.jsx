@@ -18,6 +18,8 @@ import SetlistManager from './SetlistManager';
 import AutoScroll from './components/AutoScroll';
 import GuestSongView from './guest/GuestSongView';
 import ToneControl from './components/ToneControl';
+import Metronome from './components/Metronome';
+import PrintControl from './components/PrintControl';
 
 // --- SIDEBAR CẬP NHẬT ---
 const Sidebar = ({ activeTab, setActiveTab, theme, setTheme, currentUser, onLogout, resetView }) => {
@@ -340,6 +342,7 @@ function SongDetail({ song, onBack, onEdit, onDelete, onRefresh, chordColor, set
   const [showChords, setShowChords] = useState(true);
   const [selectedChord, setSelectedChord] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false); // State cho nút xoay
+  const [showMetronome, setShowMetronome] = useState(false); // State hiển thị Metronome
 
   const embedUrl = getYouTubeEmbedUrl(song.refLink);
 
@@ -418,7 +421,10 @@ function SongDetail({ song, onBack, onEdit, onDelete, onRefresh, chordColor, set
 
   return (
     <div className="song-viewer">
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+      <div 
+        className="song-top-bar" 
+        style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}
+      >
         <button className="btn-back" onClick={onBack}>← Danh sách</button>
         
         <div style={{display: 'flex', gap: '10px'}}>
@@ -503,17 +509,50 @@ function SongDetail({ song, onBack, onEdit, onDelete, onRefresh, chordColor, set
               <div key={color} onClick={() => setChordColor(color)} style={{ width: '24px', height: '24px', backgroundColor: color, borderRadius: '50%', border: chordColor === color ? '2px solid #333' : '1px solid #ccc' }} />
             ))}
           </div>
+
           <button onClick={() => setShowChords(!showChords)} style={{backgroundColor: showChords ? '#e8f5e9' : '#ffebee', color: showChords ? '#2e7d32' : '#c62828', padding: '5px 15px', borderRadius: '20px'}}>
             {showChords ? "● Hiện hợp âm" : "○ Ẩn hợp âm"}
           </button>
+
+          {/* --- NÚT METRONOME --- */}
+          <button 
+            onClick={() => setShowMetronome(true)}
+            style={{
+                backgroundColor: '#fff3cd', 
+                color: '#856404', 
+                border: '1px solid #ffeeba',
+                borderRadius: '20px',
+                padding: '5px 15px',
+                display: 'flex', alignItems: 'center', gap: '5px'
+            }}
+          >
+            ⏱️Metronome
+          </button>
+
         </div>
       </div>
 
       <hr style={{margin: '30px 0', opacity: 0.3}} />
       
-      <div className="song-content" style={{ fontSize: `${fontSize}rem`, lineHeight: `${fontSize * 2.5}` }}>
+      <div className="song-content" 
+      style={{ 
+          fontSize: `${fontSize}rem`, 
+          lineHeight: `${fontSize * 2.5}`,
+          
+          // Truyền giá trị state hiện tại vào biến CSS để file App.css đọc được
+          '--current-font-size': `${fontSize}rem`,
+          '--current-line-height': `${fontSize * 2.5}`
+          // ----------------------
+        }}
+      >
         {renderContent(song.content)}
       </div>
+
+      {/* --- HIỂN THỊ DIALOG METRONOME NẾU BẬT --- */}
+      {showMetronome && <Metronome onClose={() => setShowMetronome(false)} />}
+
+      {/* Nút in ấn */}
+      <PrintControl />
 
       <AutoScroll />
       {/* Nút chỉnh Tone (Bên phải) */}

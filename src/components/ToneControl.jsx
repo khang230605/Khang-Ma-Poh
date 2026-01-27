@@ -217,6 +217,15 @@ const ToneControl = ({ transpose, setTranspose, currentKey }) => {
             font-weight: 800; 
             line-height: 1.1; 
         }
+
+        /* Ẩn khi in ấn */
+        @media print {
+          .tone-floater {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+          }
+        }
       `}</style>
     </div>
   );

@@ -731,3 +731,93 @@ input[type="range"]::-webkit-slider-thumb {
     display: none !important;
   }
 }
+
+/* --- CẤU HÌNH GIAO DIỆN KHI IN --- */
+@media print {
+  /* 1. Ẩn tất cả thành phần rác */
+  .sidebar,               /* Menu trái */
+  .song-top-bar,          /* <--- MỚI: Thanh công cụ phía trên (Share/Edit/Delete) */
+  .tone-floater,          /* <--- MỚI: Nút Tone Draggable */
+  .tone-fixed-wrapper,    /* Nút Tone Cố định (nếu dùng bản cũ) */
+  .btn-create,            
+  .video-wrapper,         
+  .controls-row,          
+  .autoscroll-wrapper,    
+  .font-size-floater,     
+  .print-control-container, /* Nút in ở dưới đáy */
+  .search-bar,            
+  header,                 
+  .chord-viewer-modal,    
+  .metronome-overlay      
+  {
+    display: none !important;
+  }
+
+  /* 2. Reset Layout để in ra giấy trắng mực đen */
+  body, .app-layout, .main-wrapper, .container, .song-viewer {
+    background-color: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    position: static !important;
+    display: block !important; 
+  }
+
+  /* 3. Tùy chỉnh Tiêu đề khi in */
+  .song-header h2 {
+    font-size: 24pt !important;
+    text-align: center;
+    margin-bottom: 5px;
+    color: #000 !important;
+    margin-top: 0 !important; /* Bỏ lề trên để tiết kiệm giấy */
+  }
+
+  .song-header p { /* Tên tác giả */
+    text-align: center;
+    font-size: 12pt;
+    color: #333 !important;
+    margin-bottom: 30px;
+  }
+
+  /* 4. Tùy chỉnh Lời bài hát khi in */
+  .song-content {
+    /* Dùng biến var(...) để lấy kích thước từ React */
+    font-size: var(--current-font-size) !important; 
+    line-height: var(--current-line-height) !important;
+    
+    color: #000 !important;
+    
+    /* Chia cột (Giữ nguyên hoặc bỏ tùy bạn) */
+    column-count: 2;
+    column-gap: 40px;
+  }
+
+  /* 5. Tùy chỉnh Hợp âm khi in (Tiết kiệm mực) */
+  .chord {
+    border: 1px solid #333 !important;     
+    background-color: white !important; 
+    color: #000 !important;     
+    padding: 0 4px;
+    font-size: 0.9em;
+    font-weight: bold;
+    box-shadow: none !important;
+    transform: translateY(-2px);
+  }
+
+  /* 6. Footer bản quyền */
+  .song-viewer::after {
+    content: "Nguồn: Khang Ma Poh - HDCG";
+    display: block;
+    text-align: center;
+    font-size: 9pt;
+    color: #888;
+    margin-top: 30px;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+  }
+}
