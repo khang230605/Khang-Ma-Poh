@@ -551,8 +551,39 @@ function SongDetail({ song, onBack, onEdit, onDelete, onRefresh, chordColor, set
       {/* --- HIỂN THỊ DIALOG METRONOME NẾU BẬT --- */}
       {showMetronome && <Metronome onClose={() => setShowMetronome(false)} />}
 
-      {/* Nút in ấn */}
-      <PrintControl />
+      {/* --- BẮT ĐẦU VÙNG XUẤT PDF --- */}
+      {/* Thêm thẻ div bao quanh Header và Content với id="pdf-source" */}
+      <div id="pdf-source" style={{ padding: '20px', backgroundColor: 'white' }}>
+        
+        <div className="song-header">
+          <h2 style={{fontSize: '2.5rem', marginBottom: '5px', color: '#000'}}>{song.title}</h2>
+          <p style={{fontSize: '1.2rem', color: '#666', marginTop: '0'}}>Arranger: {song.author}</p>
+          {/* Ẩn các nút điều khiển khi xuất PDF bằng cách không bỏ chúng vào đây */}
+        </div>
+
+        <hr style={{margin: '30px 0', opacity: 0.3}} />
+        
+        <div className="song-content" style={{ 
+            fontSize: `${fontSize}rem`, 
+            lineHeight: `${fontSize * 2.5}`,
+            // Truyền biến màu vào để thư viện chụp được màu hợp âm
+            '--chord-color': chordColor 
+        }}>
+          {renderContent(song.content)}
+        </div>
+
+        {/* Footer bản quyền cho file PDF */}
+        <div className="pdf-footer" style={{ 
+            marginTop: '50px', borderTop: '1px solid #ddd', paddingTop: '10px', 
+            textAlign: 'center', fontSize: '0.8rem', color: '#888', display: 'none' 
+        }}>
+           Nguồn: Khang Ma Poh - HDCG
+        </div>
+      </div>
+      {/* --- KẾT THÚC VÙNG XUẤT PDF --- */}
+
+      {/* Truyền title vào PrintControl để đặt tên file */}
+      <PrintControl title={song.title} elementId="pdf-source" />
 
       <AutoScroll />
       {/* Nút chỉnh Tone (Bên phải) */}
