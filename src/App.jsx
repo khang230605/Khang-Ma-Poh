@@ -25,35 +25,48 @@ import PrintControl from './components/PrintControl';
 const Sidebar = ({ activeTab, setActiveTab, theme, setTheme, currentUser, onLogout, resetView }) => {
   return (
     <div className="sidebar">
+      {/* 1. LOGO (Ghim trên cùng) */}
       <img 
         src={myLogo} alt="Logo" className="sidebar-logo" 
         onClick={() => { setActiveTab('home'); resetView(); }}
       />
-      <div className={`nav-item ${activeTab === 'home' ? 'active' : ''}`} onClick={() => { setActiveTab('home'); resetView(); }}>
-        <div className="nav-icon">🏠</div><span className="nav-text">Trang chủ</span>
-      </div>
-      <div className={`nav-item ${activeTab === 'tone' ? 'active' : ''}`} onClick={() => setActiveTab('tone')}>
-        <div className="nav-icon">🎵</div><span className="nav-text">Dò Tone</span>
-      </div>
-      <div className={`nav-item ${activeTab === 'setlist' ? 'active' : ''}`} onClick={() => setActiveTab('setlist')}>
-        <div className="nav-icon">📋</div><span className="nav-text">Danh sách</span>
+
+      {/* 2. MENU CHÍNH (Sẽ cuộn nếu quá dài) */}
+      <div className="nav-list-scroll">
+          <div className={`nav-item ${activeTab === 'home' ? 'active' : ''}`} onClick={() => { setActiveTab('home'); resetView(); }}>
+            <div className="nav-icon">🏠</div><span className="nav-text">Trang chủ</span>
+          </div>
+          <div className={`nav-item ${activeTab === 'tone' ? 'active' : ''}`} onClick={() => setActiveTab('tone')}>
+            <div className="nav-icon">🎵</div><span className="nav-text">Dò Tone</span>
+          </div>
+          <div className={`nav-item ${activeTab === 'setlist' ? 'active' : ''}`} onClick={() => setActiveTab('setlist')}>
+            <div className="nav-icon">📋</div><span className="nav-text">Danh sách</span>
+          </div>
+
+          {/* Ví dụ thêm nhiều mục sau này */}
+          {/* <div className="nav-item"><div className="nav-icon">🎸</div><span className="nav-text">Hợp âm</span></div>
+          <div className="nav-item"><div className="nav-icon">🎹</div><span className="nav-text">Piano</span></div> 
+          */}
+
+          {/* Admin Button */}
+          {currentUser?.role === 'admin' && (
+            <div className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`} onClick={() => setActiveTab('admin')}>
+              <div className="nav-icon">⚙️</div><span className="nav-text">Quản trị</span>
+            </div>
+          )}
       </div>
 
-      {/* --- MỚI: NÚT ADMIN (CHỈ HIỆN VỚI ROLE ADMIN) --- */}
-      {currentUser?.role === 'admin' && (
-        <div className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`} onClick={() => setActiveTab('admin')}>
-          <div className="nav-icon">⚙️</div><span className="nav-text">Quản trị</span>
-        </div>
-      )}
-      
-      <div className="nav-item" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} style={{ marginTop: 'auto' }}>
-        <div className="nav-icon">{theme === 'light' ? '🌙' : '☀️'}</div>
-        <span className="nav-text">Giao diện</span>
-      </div>
+      {/* 3. FOOTER MENU (Ghim dưới đáy) */}
+      <div className="nav-footer">
+          <div className="nav-item" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+            <div className="nav-icon">{theme === 'light' ? '🌙' : '☀️'}</div>
+            <span className="nav-text">Giao diện</span>
+          </div>
 
-      <div className="nav-item" onClick={onLogout} style={{ marginBottom: '20px', borderTop: '1px solid #eee' }}>
-        <div className="nav-icon">🚪</div>
-        <span className="nav-text">Đăng xuất ({currentUser?.name})</span>
+          <div className="nav-item" onClick={onLogout}>
+            <div className="nav-icon">🚪</div>
+            <span className="nav-text">Đăng xuất</span>
+          </div>
       </div>
     </div>
   );

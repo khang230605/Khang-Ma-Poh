@@ -549,40 +549,75 @@ input[type="range"]::-webkit-slider-thumb {
 
 /* --- SIDEBAR (MENU TRÁI) --- */
 .sidebar {
-  width: 80px; /* Mặc định thu gọn chỉ hiện Icon cho đẹp */
+  width: 80px; 
   background-color: #fff;
   border-right: 1px solid var(--border-color);
+  
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 20px 0;
+  
   position: sticky;
   top: 0;
   height: 100vh;
   z-index: 100;
+  
   transition: width 0.3s ease;
-  flex-shrink: 0; /* Không bị co lại */
+  flex-shrink: 0;
+  overflow: hidden; /* Ẩn cuộn thừa của chính sidebar */
 }
 
-/* Khi rê chuột vào menu trái thì mở rộng (trên PC) */
+/* Phần chứa các mục menu chính (Giữa) */
+.nav-list-scroll {
+  width: 100%;
+  flex-grow: 1; /* Chiếm hết khoảng trống còn lại */
+  overflow-y: auto; /* Cho phép cuộn dọc */
+  overflow-x: hidden;
+  
+  /* Ẩn thanh cuộn mặc định cho đẹp */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* Ẩn thanh cuộn trên Chrome/Safari */
+.nav-list-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Phần Footer (Theme/Logout) - Ghim đáy */
+.nav-footer {
+  width: 100%;
+  margin-top: auto; /* Đẩy xuống đáy */
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #fff; /* Đảm bảo nền trắng che nội dung trôi qua */
+}
+
+/* Hiệu ứng mở rộng Sidebar trên PC */
 .sidebar:hover {
   width: 240px;
-  align-items: flex-start; /* Căn lề trái khi mở rộng */
-  padding-left: 20px;
+  align-items: stretch; /* Kéo giãn nội dung ra lề trái */
+  padding-left: 0;
 }
 
-/* Logo App trên Menu */
+/* Logo App */
 .sidebar-logo {
-  width: 50px;
-  height: 50px;
-  margin-bottom: 40px;
+  width: 50px; height: 50px;
+  margin-bottom: 20px;
   cursor: pointer;
   transition: 0.3s;
+  flex-shrink: 0; /* Không bị co lại */
+  align-self: center;
 }
 .sidebar:hover .sidebar-logo {
   transform: scale(1.1);
-  align-self: center; /* Logo vẫn nằm giữa */
-  margin-left: -20px; /* Bù trừ padding */
 }
 
 /* CÁC NÚT TRÊN MENU */
@@ -591,145 +626,130 @@ input[type="range"]::-webkit-slider-thumb {
   align-items: center;
   width: 100%;
   padding: 15px 0;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
   cursor: pointer;
   color: var(--text-secondary);
   transition: 0.2s;
-  border-radius: 12px 0 0 12px; /* Bo góc bên trái */
+  border-radius: 0 12px 12px 0; /* Đổi bo góc sang phải cho lạ mắt hoặc giữ nguyên */
   position: relative;
+  white-space: nowrap; /* Ngăn xuống dòng */
 }
 
 .nav-item:hover {
   color: var(--primary-color);
-  background-color: #fff5f5; /* Nền đỏ nhạt khi hover */
+  background-color: #fff5f5;
 }
 
-/* Icon trong menu */
+/* Icon */
 .nav-icon {
   font-size: 1.6rem;
-  width: 60px; /* Chiếm không gian cố định để thẳng hàng */
+  width: 80px; /* Bằng độ rộng sidebar thu gọn để căn giữa */
+  min-width: 80px; /* Cố định cứng */
   text-align: center;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: flex; justify-content: center; align-items: center;
 }
 
-/* Chữ trong menu (Ẩn khi menu thu gọn) */
+/* Chữ (Ẩn khi thu gọn) */
 .nav-text {
   font-size: 1rem;
   font-weight: 600;
   opacity: 0;
-  white-space: nowrap;
   transition: opacity 0.2s;
-  pointer-events: none; /* Tránh click nhầm khi ẩn */
 }
 
 /* Hiện chữ khi hover sidebar */
 .sidebar:hover .nav-text {
   opacity: 1;
-  pointer-events: auto;
 }
 
-/* Trạng thái Active (Đang chọn) */
+/* Active State */
 .nav-item.active {
   color: var(--primary-color);
   background-color: #fff0f0;
-  border-right: 3px solid var(--primary-color);
+  border-right: 4px solid var(--primary-color); 
 }
 
-.nav-item.active .nav-icon {
-  transform: scale(1.1);
-}
-
-/* --- KHU VỰC NỘI DUNG CHÍNH (Bên phải) --- */
-.main-wrapper {
-  flex-grow: 1;
-  padding: 20px;
-  overflow-x: hidden; /* Tránh thanh cuộn ngang */
-}
-
-/* Sửa lại .container cũ để nó full chiều rộng của khu vực bên phải */
-.container {
-  max-width: 100% !important; 
-  min-height: 95vh;
-  margin: 0 !important;
-}
-
-/* --- LOGO HDCG & TONE TRONG SIDEBAR --- */
-.sidebar-img-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-.sidebar-img-btn img {
-  width: 100%; height: 100%; object-fit: cover;
-}
-
-/* --- MOBILE RESPONSIVE (Biến thành thanh ngang bên dưới) --- */
+/* --- MOBILE RESPONSIVE (TRƯỢT NGANG) --- */
 @media (max-width: 768px) {
-  .app-layout {
-    flex-direction: column;
-  }
+  .app-layout { flex-direction: column; }
   
   .sidebar {
     position: fixed;
-    bottom: 0;
-    top: auto; /* Bỏ dính trên */
-    left: 0;
+    bottom: 0; top: auto; left: 0;
     width: 100%;
-    height: 70px; /* Chiều cao thanh bottom bar */
-    flex-direction: row; /* Xếp ngang */
-    justify-content: space-around; /* Chia đều khoảng cách */
+    height: 70px;
     padding: 0;
+    
+    /* Layout ngang */
+    flex-direction: row; 
+    align-items: center;
+    justify-content: flex-start; /* Bắt đầu từ trái */
+    
     border-right: none;
     border-top: 1px solid #ddd;
     box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    
+    /* KÍCH HOẠT TRƯỢT NGANG */
+    overflow-x: auto; 
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    
+    /* Ẩn thanh cuộn ngang xấu xí */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  /* Gộp chung nav-list-scroll và nav-footer thành dòng ngang */
+  .nav-list-scroll, .nav-footer {
+    width: auto;
+    flex-direction: row; /* Xếp ngang */
+    flex-grow: 0;
+    overflow: visible;
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Trên mobile, footer không cần border top */
+  .nav-footer { border-top: none; }
 
   /* Không hover mở rộng trên mobile */
-  .sidebar:hover {
-    width: 100%;
-    padding-left: 0;
-    align-items: center;
-  }
+  .sidebar:hover { width: 100%; }
 
   .nav-item {
     flex-direction: column; /* Icon trên, chữ dưới */
     padding: 5px 0;
     margin: 0;
-    width: auto;
+    width: 75px; /* Chiều rộng cố định mỗi nút trên mobile */
+    min-width: 75px; /* QUAN TRỌNG: Để không bị co lại khi nhiều mục */
+    flex-shrink: 0;  /* QUAN TRỌNG: Ngăn co lại, ép thanh phải cuộn */
     border-radius: 8px;
     border-right: none;
-    background: transparent !important; /* Bỏ nền active trên mobile cho đỡ thô */
+    border-bottom: 3px solid transparent; /* Chuyển border active xuống đáy */
   }
   
+  .nav-item.active {
+    border-right: none;
+    border-bottom: 3px solid var(--primary-color);
+    background: transparent;
+  }
+
   .nav-icon {
-    width: auto;
-    font-size: 1.4rem;
-    margin-bottom: 2px;
+    width: auto; min-width: auto;
+    font-size: 1.4rem; margin-bottom: 2px;
   }
 
   .nav-text {
-    opacity: 1; /* Luôn hiện chữ nhỏ */
+    opacity: 1; /* Luôn hiện */
     font-size: 0.65rem;
     pointer-events: auto;
   }
 
-  .sidebar-logo {
-    display: none; /* Ẩn logo to trên thanh bottom bar */
-  }
+  .sidebar-logo { display: none; }
   
-  /* Đẩy nội dung lên để không bị thanh menu che mất */
-  .main-wrapper {
-    padding-bottom: 80px; 
-  }
-  
-  /* Ẩn các nút cũ nếu còn sót */
-  .header-controls { 
-    display: none !important;
-  }
+  .main-wrapper { padding-bottom: 80px; }
+  .header-controls { display: none !important; }
 }
 
 /* --- CẤU HÌNH GIAO DIỆN KHI IN --- */
