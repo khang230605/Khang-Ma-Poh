@@ -58,10 +58,10 @@ const Sidebar = ({ activeTab, setActiveTab, theme, setTheme, currentUser, onLogo
 
       {/* 3. FOOTER MENU (Ghim dưới đáy) */}
       <div className="nav-footer">
-          <div className="nav-item" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+          {/* <div className="nav-item" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
             <div className="nav-icon">{theme === 'light' ? '🌙' : '☀️'}</div>
             <span className="nav-text">Giao diện</span>
-          </div>
+          </div> */}
 
           <div className="nav-item" onClick={onLogout}>
             <div className="nav-icon">🚪</div>
