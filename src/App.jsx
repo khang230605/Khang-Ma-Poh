@@ -21,6 +21,9 @@ import ToneControl from './components/ToneControl';
 import Metronome from './components/Metronome';
 import PrintControl from './components/PrintControl';
 
+// --- AI ADDIN ---
+import LyricsFinder from './AIaddin/LyricsFinder';
+
 // --- SIDEBAR CẬP NHẬT ---
 const Sidebar = ({ activeTab, setActiveTab, theme, setTheme, currentUser, onLogout, resetView }) => {
   return (
@@ -36,11 +39,17 @@ const Sidebar = ({ activeTab, setActiveTab, theme, setTheme, currentUser, onLogo
           <div className={`nav-item ${activeTab === 'home' ? 'active' : ''}`} onClick={() => { setActiveTab('home'); resetView(); }}>
             <div className="nav-icon">🏠</div><span className="nav-text">Trang chủ</span>
           </div>
+          
           <div className={`nav-item ${activeTab === 'tone' ? 'active' : ''}`} onClick={() => setActiveTab('tone')}>
             <div className="nav-icon">🎵</div><span className="nav-text">Dò Tone</span>
           </div>
+
           <div className={`nav-item ${activeTab === 'setlist' ? 'active' : ''}`} onClick={() => setActiveTab('setlist')}>
             <div className="nav-icon">📋</div><span className="nav-text">Danh sách</span>
+          </div>
+
+          <div className={`nav-item ${activeTab === 'lyrics' ? 'active' : ''}`} onClick={() => setActiveTab('lyrics')}>
+            <div className="nav-icon">👀</div><span className="nav-text">Lyrics Finder</span>
           </div>
 
           {/* Ví dụ thêm nhiều mục sau này */}
@@ -288,6 +297,9 @@ function App() {
                     if(full) setSelectedSong(full);
                 }}
               />
+            // --- MỚI: TAB LYRICS FINDER ---
+          ) : activeTab === 'lyrics' ? (
+              <LyricsFinder />
           ) : (
               <>
                 {/* --- TRANG CHỦ (HOME) --- */}
