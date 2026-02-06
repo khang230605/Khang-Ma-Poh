@@ -1,0 +1,82 @@
+/* src/schedule/schedule.css */
+@import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+.schedule-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  background: white; /* Đảm bảo nền trắng để dễ nhìn */
+  border-radius: 8px;
+  overflow: hidden; /* Cắt bỏ phần thừa nếu có */
+}
+
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-shrink: 0; /* Không cho header bị co lại */
+}
+
+/* Class mặc định của thư viện lịch */
+.rbc-calendar {
+  flex: 1; /* Tự động chiếm hết chiều cao còn lại */
+  width: 100% !important; /* Ép chiều rộng về 100% khung chứa */
+  min-height: 500px; /* Chiều cao tối thiểu để không bị nát trên mobile */
+}
+
+.admin-controls button {
+  padding: 10px 20px;
+  margin-left: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-create { background-color: #28a745; color: white; }
+.btn-edit { background-color: #ffc107; color: #333; }
+
+/* Modal Styling */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 25px;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90%;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.event-list-item {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.event-list-item:hover { background-color: #f0f0f0; }

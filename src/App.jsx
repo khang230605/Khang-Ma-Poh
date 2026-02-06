@@ -20,6 +20,7 @@ import GuestSongView from './guest/GuestSongView';
 import ToneControl from './components/ToneControl';
 import Metronome from './components/Metronome';
 import PrintControl from './components/PrintControl';
+import { ScheduleWrapper } from './schedule';
 
 // --- AI ADDIN ---
 import LyricsFinder from './AIaddin/LyricsFinder';
@@ -50,6 +51,10 @@ const Sidebar = ({ activeTab, setActiveTab, theme, setTheme, currentUser, onLogo
 
           <div className={`nav-item ${activeTab === 'lyrics' ? 'active' : ''}`} onClick={() => setActiveTab('lyrics')}>
             <div className="nav-icon">👀</div><span className="nav-text">Lyrics Finder</span>
+          </div>
+
+          <div className={`nav-item ${activeTab === 'schedule' ? 'active' : ''}`} onClick={() => setActiveTab('schedule')}>
+            <div className="nav-icon">📅</div><span className="nav-text">HDCG Schedule</span>
           </div>
 
           {/* Ví dụ thêm nhiều mục sau này */}
@@ -248,11 +253,13 @@ function App() {
 
   return (
     <div className="app-layout">
+      {/* ... Phần Sidebar đã sửa ở Bước 2 ... */}
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={(tab) => {
             setActiveTab(tab);
             if(tab === 'tone') window.history.pushState(null, "", "/tonefinder");
+            if(tab === 'schedule') window.history.pushState(null, "", "/hdcgschedule"); // Thêm dòng này
         }}
         theme={theme}
         setTheme={setTheme}
@@ -284,10 +291,15 @@ function App() {
           ) : activeTab === 'tone' ? (
               <ToneFinder onBack={() => { setActiveTab('home'); window.history.pushState(null, "", "/"); }} />
           
-          /* --- MỚI: TAB ADMIN --- */
+          /* --- TAB ADMIN --- */
           ) : activeTab === 'admin' && currentUser.role === 'admin' ? (
               <AdminDashboard /> 
 
+          /* --- MỚI: TAB SCHEDULE (LỊCH) --- */
+          ) : activeTab === 'schedule' ? (
+              <ScheduleWrapper currentUser={currentUser} />
+
+          /* --- TAB SETLIST --- */
           ) : activeTab === 'setlist' ? (
               <SetlistManager 
                 currentUser={currentUser}
@@ -297,13 +309,14 @@ function App() {
                     if(full) setSelectedSong(full);
                 }}
               />
-            // --- MỚI: TAB LYRICS FINDER ---
+          /* --- TAB LYRICS FINDER --- */
           ) : activeTab === 'lyrics' ? (
               <LyricsFinder />
           ) : (
               <>
                 {/* --- TRANG CHỦ (HOME) --- */}
                 <header>
+                  {/* ... (Giữ nguyên phần Header cũ của bạn) ... */}
                   <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
                       <img src={hdcgLogo} alt="Logo" style={{height: '60px', width: 'auto'}} />
                       <div>
@@ -320,6 +333,7 @@ function App() {
                 </header>
 
                 <div className="main-home">
+                   {/* ... (Giữ nguyên phần danh sách bài hát cũ của bạn) ... */}
                   <div className="search-bar" style={{ marginBottom: '20px' }}>
                     <input 
                       type="text" 
