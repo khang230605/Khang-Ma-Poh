@@ -22,6 +22,7 @@ import Metronome from './components/Metronome';
 import PrintControl from './components/PrintControl';
 import { ScheduleWrapper } from './schedule';
 import { Helmet } from 'react-helmet-async';
+import HDCGManager from './HDCG/HDCGManager';
 
 // --- AI ADDIN ---
 import LyricsFinder from './AIaddin/LyricsFinder';
@@ -62,6 +63,12 @@ const Sidebar = ({ activeTab, setActiveTab, theme, setTheme, currentUser, onLogo
           {/* <div className="nav-item"><div className="nav-icon">🎸</div><span className="nav-text">Hợp âm</span></div>
           <div className="nav-item"><div className="nav-icon">🎹</div><span className="nav-text">Piano</span></div> 
           */}
+          {/* HDCG Official Button */}
+          {currentUser?.role !== 'member' && ( // Chỉ cho HDCG Member và Admin thấy
+              <div className={`nav-item ${activeTab === 'hdcg_official' ? 'active' : ''}`} onClick={() => setActiveTab('hdcg_official')}>
+                  <div className="nav-icon">💿</div><span className="nav-text">HDCG Official</span>
+              </div>
+          )}
 
           {/* Admin Button */}
           {currentUser?.role === 'admin' && (
@@ -319,6 +326,10 @@ function App() {
           /* --- TAB LYRICS FINDER --- */
           ) : activeTab === 'lyrics' ? (
               <LyricsFinder />
+          )
+          /* --- TAB HDCG OFFICIAL --- */
+          : activeTab === 'hdcg_official' ? (
+              <HDCGManager currentUser={currentUser} />
           ) : (
               <>
                 {/* --- TRANG CHỦ (HOME) --- */}
