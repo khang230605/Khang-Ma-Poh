@@ -21,6 +21,7 @@ import ToneControl from './components/ToneControl';
 import Metronome from './components/Metronome';
 import PrintControl from './components/PrintControl';
 import { ScheduleWrapper } from './schedule';
+import { Helmet } from 'react-helmet-async';
 
 // --- AI ADDIN ---
 import LyricsFinder from './AIaddin/LyricsFinder';
@@ -252,6 +253,12 @@ function App() {
   if (!currentUser) return <UserAuth onLoginSuccess={handleLoginSuccess} />;
 
   return (
+  <>
+    <Helmet>
+         <title>Khangmapoh - Kho Hợp Âm Độc Quyền của HDCG</title>
+         <meta name="description" content="Web tra cứu hợp âm, dò tone, tìm lyrics và công cụ hỗ trợ ban nhạc của Khangmapoh." />
+         <meta name="keywords" content="khangmapoh, khang ma poh, khang hợp âm, hdcg hợp âm, hồ đá chà gươm, hdcg" />
+    </Helmet>
     <div className="app-layout">
       {/* ... Phần Sidebar đã sửa ở Bước 2 ... */}
       <Sidebar 
@@ -370,6 +377,7 @@ function App() {
         </div>
       </div>
     </div>
+  </>
   );
 }
 
