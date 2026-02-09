@@ -1,0 +1,196 @@
+/* src/HDCG/OfficialSongDetail.css */
+
+/* --- 1. KHUNG BAO NGOÀI CÙNG --- */
+.hdcg-container {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
+  /* Ngăn chặn tuyệt đối việc tràn màn hình */
+  overflow-x: hidden; 
+  padding-bottom: 50px;
+}
+
+/* --- 2. HEADER & NAV (Nút Back, Save...) --- */
+.hdcg-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap; /* Cho phép xuống dòng nếu màn hình bé */
+  gap: 10px;
+}
+
+.hdcg-btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hdcg-btn.primary { background: #d71920; color: white; border: none; }
+.hdcg-btn.refresh { background: #17a2b8; color: white; border: none; }
+
+/* --- 3. THANH NHẠC CỤ (INSTRUMENT BAR) --- */
+.hdcg-inst-bar {
+  display: flex;
+  overflow-x: auto; /* Cho phép cuộn ngang */
+  gap: 10px;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  width: 100%;
+  
+  /* Ẩn thanh cuộn xấu xí */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hdcg-inst-bar::-webkit-scrollbar { display: none; }
+
+.inst-btn {
+  padding: 6px 15px;
+  border-radius: 20px;
+  border: none;
+  white-space: nowrap; /* Không cho chữ xuống dòng */
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+  background: #f0f0f0;
+  color: #444;
+  opacity: 0.6;
+}
+
+.inst-btn.active {
+  opacity: 1;
+  color: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* --- 4. HEADER BÀI HÁT (Tiêu đề, Tác giả) --- */
+.hdcg-song-header h2 {
+  font-size: 2.5rem;
+  margin: 0 0 5px 0;
+  line-height: 1.2;
+  word-wrap: break-word; /* Ngắt từ nếu quá dài */
+}
+
+.hdcg-song-header p {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0;
+}
+
+/* --- 5. THANH CÔNG CỤ (Tone, Font, Metronome) --- */
+.hdcg-controls {
+  display: flex;
+  flex-wrap: wrap; /* QUAN TRỌNG: Tự xuống dòng trên mobile */
+  gap: 15px;
+  align-items: center;
+  margin-top: 20px;
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #eee;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+}
+
+.control-btn-circle {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+  background: white;
+  display: flex; justify-content: center; align-items: center;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.control-value {
+  min-width: 30px; text-align: center; font-weight: bold; color: #d71920; font-size: 1.2rem;
+}
+
+.color-dot {
+  width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 1px solid #ccc;
+}
+
+.action-pill {
+  padding: 6px 15px; border-radius: 20px; border: 1px solid #ccc; background: white; cursor: pointer;
+  font-weight: 500;
+}
+
+/* --- 6. NỘI DUNG BÀI HÁT (HIỂN THỊ) --- */
+.hdcg-content {
+  margin-top: 30px;
+  white-space: pre-wrap;
+  word-wrap: break-word; /* Chống tràn khung */
+  overflow-wrap: break-word;
+  /* Font size & Line height sẽ được set inline từ React */
+}
+
+/* Class .chord: Style cho hợp âm */
+.chord {
+  color: white; /* Chữ trắng */
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.8em;
+  position: relative;
+  display: inline-block;
+  line-height: 1.2;
+  margin: 0 2px;
+  transform: translateY(-5px);
+  /* Background color sẽ được set inline từ React variable */
+}
+
+.song-note {
+  font-style: italic; color: #e83e8c; font-weight: bold;
+}
+
+/* --- 7. TRÌNH SOẠN THẢO (EDITOR) --- */
+.editor-box {
+  margin-top: 20px;
+}
+.editor-info {
+  background: #e9ecef; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #ccc;
+}
+.toolbar-scroll {
+  display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 5px;
+}
+.toolbar-btn {
+  min-width: 35px; padding: 5px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 4px; font-weight: bold;
+}
+.main-textarea {
+  width: 100%;
+  min-height: 500px;
+  padding: 15px;
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  box-sizing: border-box; /* Quan trọng để không bị tràn */
+}
+
+/* --- 8. RESPONSIVE MOBILE --- */
+@media (max-width: 600px) {
+  .hdcg-song-header h2 { font-size: 1.8rem; }
+  
+  /* Ép các nút trong control row nhỏ lại xíu */
+  .control-group { padding: 4px 8px; font-size: 0.9rem; }
+  
+  /* Ẩn thanh cuộn ngang */
+  .hdcg-inst-bar::-webkit-scrollbar, .toolbar-scroll::-webkit-scrollbar { display: none; }
+}

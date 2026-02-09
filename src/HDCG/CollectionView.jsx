@@ -34,7 +34,7 @@ const CollectionView = ({ onSelect, currentUser }) => {
   return (
     <div className="collection-view">
       <div className="header-actions">
-        <h3>📂 Danh sách Album / Dự án</h3>
+        <h3>📂 Danh sách</h3>
         <button className="btn-create" onClick={() => setIsCreating(true)}>+ Tạo Mới</button>
       </div>
 

@@ -66,7 +66,7 @@ const Sidebar = ({ activeTab, setActiveTab, theme, setTheme, currentUser, onLogo
           {/* HDCG Official Button */}
           {currentUser?.role !== 'member' && ( // Chỉ cho HDCG Member và Admin thấy
               <div className={`nav-item ${activeTab === 'hdcg_official' ? 'active' : ''}`} onClick={() => setActiveTab('hdcg_official')}>
-                  <div className="nav-icon">💿</div><span className="nav-text">HDCG Official</span>
+                  <div className="nav-icon"><img src={hdcgLogo} alt="Logo" style={{height: '30px', width: 'auto'}}></img></div><span className="nav-text">HDCG Official</span>
               </div>
           )}
 
